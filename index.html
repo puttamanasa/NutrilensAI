@@ -1,0 +1,1490 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>NutriLens — AI Nutrition Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --forest:#1a2e1a;--moss:#2d4a2d;--sage:#4a7a4a;--fern:#6ba86b;--leaf:#92c992;--mint:#c8e6c8;
+  --cream:#f7f4ed;--warm:#f0ead8;--paper:#fffef9;
+  --gold:#b8860b;--gold2:#d4a017;--amber:#e8a93a;--honey:#f5c760;--sand:#ede0c0;
+  --coral:#d4604a;--blush:#e8907a;--sky:#3d80c0;--mist:#cce0f5;
+  --ink:#1e1e1e;--charcoal:#2f2f2f;--muted:#6e7e6e;--border:rgba(74,122,74,0.15);
+  --red:#b83232;--green:#2a6e2a;--blue:#2d6aaa;
+  --shadow:0 4px 28px rgba(26,46,26,0.09);--shadow-md:0 6px 36px rgba(26,46,26,0.13);--shadow-lg:0 12px 56px rgba(26,46,26,0.17);
+  --radius:16px;--radius-sm:10px;--radius-xs:7px;
+  --glass-bg:rgba(255,255,255,0.13);--glass-bg-strong:rgba(255,255,255,0.22);
+  --glass-border:rgba(255,255,255,0.28);--glass-border-strong:rgba(255,255,255,0.42);
+  --glass-shadow:0 8px 40px rgba(0,0,0,0.18),0 2px 8px rgba(0,0,0,0.12);
+  --glass-shadow-lg:0 16px 60px rgba(0,0,0,0.28),0 4px 16px rgba(0,0,0,0.15);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:'DM Sans',sans-serif;color:var(--ink);background:var(--cream);overflow-x:hidden;min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");opacity:0.5;}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(74,122,74,0.22);border-radius:3px}
+.page{display:none;min-height:100vh;position:relative;z-index:1;animation:pageIn .45s cubic-bezier(.22,1,.36,1) both}
+.page.active{display:block}
+@keyframes pageIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+/* SPINNER */
+.spinner-overlay{display:none;position:fixed;inset:0;background:rgba(247,244,237,0.92);backdrop-filter:blur(12px);z-index:500;align-items:center;justify-content:center;flex-direction:column;gap:1.4rem}
+.spinner-overlay.active{display:flex}
+.spinner-ring{width:58px;height:58px;border:3px solid rgba(74,122,74,0.14);border-top-color:var(--sage);border-radius:50%;animation:spin .75s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner-title{font-family:'Playfair Display',serif;font-size:1.45rem;color:var(--forest);font-weight:600;text-align:center}
+.spinner-steps{display:flex;flex-direction:column;align-items:center;gap:.55rem}
+.spinner-step{font-size:.86rem;color:var(--muted);opacity:0;animation:stepShow .5s ease forwards;text-align:center}
+.spinner-step:nth-child(1){animation-delay:.4s}.spinner-step:nth-child(2){animation-delay:2s}.spinner-step:nth-child(3){animation-delay:4s}
+@keyframes stepShow{to{opacity:1}}
+
+/* TOAST */
+#toast{position:fixed;bottom:2rem;right:2rem;z-index:600;padding:.72rem 1.35rem;border-radius:22px;font-size:.875rem;font-weight:500;opacity:0;transform:translateY(14px);transition:.32s cubic-bezier(.22,1,.36,1);pointer-events:none;backdrop-filter:blur(8px)}
+#toast.show{opacity:1;transform:translateY(0)}
+#toast.success{background:rgba(42,110,42,0.11);border:1px solid rgba(42,110,42,0.3);color:var(--green)}
+#toast.error{background:rgba(184,50,50,0.1);border:1px solid rgba(184,50,50,0.28);color:var(--red)}
+#toast.info{background:rgba(255,255,255,0.92);border:1px solid var(--border);color:var(--charcoal)}
+
+/* CARD */
+.card{background:rgba(255,255,255,0.88);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;box-shadow:var(--shadow)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;padding:.65rem 1.5rem;border-radius:22px;font-size:.9rem;font-weight:500;cursor:pointer;transition:all .22s cubic-bezier(.22,1,.36,1);border:none;font-family:'DM Sans',sans-serif;letter-spacing:.01em}
+.btn-forest{background:var(--forest);color:#fff;font-weight:600}
+.btn-forest:hover{background:var(--moss);transform:translateY(-1px);box-shadow:0 6px 22px rgba(26,46,26,0.28)}
+.btn-ghost{background:transparent;color:var(--forest);border:1.5px solid var(--border)}
+.btn-ghost:hover{background:rgba(74,122,74,0.07);border-color:var(--fern)}
+.btn-full{width:100%}
+.btn-green{background:rgba(42,110,42,0.1);color:var(--green);border:1px solid rgba(42,110,42,0.28)}
+.btn-green:hover{background:rgba(42,110,42,0.18)}
+.btn-red{background:rgba(184,50,50,0.08);color:var(--red);border:1px solid rgba(184,50,50,0.22)}
+.btn-red:hover{background:rgba(184,50,50,0.15)}
+.form-group{margin-bottom:1.1rem}
+.form-group label{display:block;font-size:.73rem;color:var(--muted);letter-spacing:.9px;text-transform:uppercase;margin-bottom:.4rem;font-weight:600}
+.form-group input,.form-group select{width:100%;background:rgba(255,255,255,0.92);border:1.5px solid var(--border);color:var(--ink);padding:.7rem 1rem;border-radius:var(--radius-sm);font-size:.9rem;font-family:'DM Sans',sans-serif;transition:.2s;appearance:none}
+.form-group input:focus,.form-group select:focus{outline:none;border-color:var(--sage);box-shadow:0 0 0 3px rgba(74,122,74,0.11)}
+.form-group input::placeholder{color:#b0beb0}
+.input-icon-wrap{position:relative}
+.input-icon-wrap .icon{position:absolute;left:.9rem;top:50%;transform:translateY(-50%);font-size:1rem;pointer-events:none}
+.input-icon-wrap input{padding-left:2.6rem}
+
+/* ══ ONBOARDING / LOGIN — shared glass bg ══ */
+.food-bg-page{position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;min-height:100vh;}
+.intro-food-bg{position:fixed;inset:0;z-index:0;
+  background:radial-gradient(ellipse 60% 55% at 15% 20%,rgba(184,134,11,.45) 0%,transparent 55%),
+    radial-gradient(ellipse 50% 45% at 85% 10%,rgba(212,96,74,.38) 0%,transparent 50%),
+    radial-gradient(ellipse 55% 50% at 75% 80%,rgba(107,168,107,.42) 0%,transparent 55%),
+    radial-gradient(ellipse 45% 40% at 10% 85%,rgba(232,169,58,.35) 0%,transparent 50%),
+    linear-gradient(135deg,#2d1f0a 0%,#1a2e1a 30%,#2a1810 60%,#1c2810 100%);}
+.intro-food-bg::before{content:'🍛 🥗 🍜 🍱 🥘 🫓 🍚 🥙 🍝 🥭 🫕 🍲 🥣 🌮 🥞 🍙 🧆 🫔';position:absolute;inset:0;display:flex;flex-wrap:wrap;gap:3.5rem;padding:2rem;font-size:3.5rem;line-height:1.6;opacity:.12;filter:blur(1px) saturate(.7);letter-spacing:.5rem;word-break:break-all;pointer-events:none;user-select:none;}
+.intro-food-overlay{position:fixed;inset:0;z-index:1;background:radial-gradient(ellipse 80% 80% at 50% 50%,rgba(10,20,10,.55) 0%,rgba(5,10,5,.75) 100%);backdrop-filter:blur(3px);}
+.intro-inner{position:relative;z-index:2;width:100%;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2.5rem 1.25rem;}
+
+/* Glass card */
+.glass-card-outer{width:100%;max-width:540px;animation:glassIn .65s cubic-bezier(.22,1,.36,1) both;}
+@keyframes glassIn{from{opacity:0;transform:translateY(28px) scale(.97)}to{opacity:1;transform:none}}
+.glass-header{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius) var(--radius) 0 0;border-bottom:none;padding:1.75rem 2rem 1.5rem;backdrop-filter:blur(24px) saturate(1.4);-webkit-backdrop-filter:blur(24px) saturate(1.4);position:relative;overflow:hidden;}
+.glass-header::before{content:'';position:absolute;top:-60px;right:-60px;width:180px;height:180px;background:radial-gradient(circle,rgba(245,199,96,.18) 0%,transparent 70%);border-radius:50%;pointer-events:none;}
+.glass-header::after{content:'';position:absolute;bottom:-40px;left:-40px;width:130px;height:130px;background:radial-gradient(circle,rgba(107,168,107,.15) 0%,transparent 70%);border-radius:50%;pointer-events:none;}
+.glass-logo-row{display:flex;align-items:center;gap:.65rem;margin-bottom:1.4rem;position:relative;z-index:1}
+.glass-logo-mark{width:38px;height:38px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:11px;display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0;box-shadow:inset 0 1px 1px rgba(255,255,255,.15);}
+.glass-logo-mark::before{content:'';position:absolute;width:21px;height:21px;border:2px solid var(--honey);border-radius:50%;top:8.5px;left:8.5px}
+.glass-logo-mark::after{content:'';position:absolute;width:7.5px;height:7.5px;background:var(--fern);border-radius:50%;top:15.3px;left:15.3px}
+.glass-logo-name{font-family:'Playfair Display',serif;font-size:1.3rem;font-weight:700;color:#fff;letter-spacing:-.1px}
+.glass-logo-name em{font-style:normal;color:var(--honey)}
+.glass-header-title{font-family:'Playfair Display',serif;font-size:1.7rem;font-weight:700;color:#fff;line-height:1.2;margin-bottom:.4rem;position:relative;z-index:1;}
+.glass-header-sub{font-size:.875rem;color:rgba(255,255,255,.6);line-height:1.65;position:relative;z-index:1;}
+.glass-dots{display:flex;gap:.45rem;margin-top:1.1rem;position:relative;z-index:1}
+.glass-dot{width:30px;height:4px;border-radius:2px;background:rgba(255,255,255,.18);transition:background .3s}
+.glass-dot.active{background:var(--honey)}
+.glass-user-chip{display:inline-flex;align-items:center;gap:.55rem;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);border-radius:20px;padding:.35rem .85rem .35rem .45rem;margin-bottom:1rem;position:relative;z-index:1;}
+.glass-user-avatar{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--honey),var(--amber));color:var(--forest);font-weight:700;font-size:.72rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.glass-user-name{font-size:.82rem;color:rgba(255,255,255,.85);font-weight:500}
+.glass-body{background:var(--glass-bg-strong);border:1px solid var(--glass-border);border-top:none;border-radius:0 0 var(--radius) var(--radius);padding:1.75rem 2rem 2rem;backdrop-filter:blur(28px) saturate(1.5);-webkit-backdrop-filter:blur(28px) saturate(1.5);box-shadow:var(--glass-shadow-lg);}
+.glass-label{display:block;font-size:.7rem;color:rgba(255,255,255,.6);letter-spacing:.9px;text-transform:uppercase;margin-bottom:.4rem;font-weight:600;}
+.glass-input{width:100%;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;padding:.68rem 1rem .68rem 2.5rem;border-radius:var(--radius-sm);font-size:.9rem;font-family:'DM Sans',sans-serif;transition:.2s;backdrop-filter:blur(4px);}
+.glass-input::placeholder{color:rgba(255,255,255,.35)}
+.glass-input:focus{outline:none;border-color:rgba(245,199,96,.6);box-shadow:0 0 0 3px rgba(245,199,96,.12);background:rgba(255,255,255,.15)}
+.glass-input-wrap{position:relative;margin-bottom:1rem}
+.glass-input-wrap .glass-input-icon{position:absolute;left:.85rem;top:50%;transform:translateY(-50%);font-size:.95rem;pointer-events:none;opacity:.65;}
+.glass-select{width:100%;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;padding:.68rem 2.2rem .68rem 2.5rem;border-radius:var(--radius-sm);font-size:.9rem;font-family:'DM Sans',sans-serif;transition:.2s;appearance:none;cursor:pointer;backdrop-filter:blur(4px);}
+.glass-select:focus{outline:none;border-color:rgba(245,199,96,.6);box-shadow:0 0 0 3px rgba(245,199,96,.12)}
+.glass-select option{background:#1a2e1a;color:#fff}
+.glass-select-wrap{position:relative}
+.glass-select-wrap::after{content:'▾';position:absolute;right:.9rem;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.5);pointer-events:none;font-size:.8rem;}
+.glass-select-wrap .glass-input-icon{position:absolute;left:.85rem;top:50%;transform:translateY(-50%);font-size:.95rem;pointer-events:none;opacity:.65}
+.glass-two-col{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+.glass-divider{height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.18),transparent);margin:1.35rem 0;}
+.glass-section-label{font-size:.7rem;color:rgba(255,255,255,.5);letter-spacing:1px;text-transform:uppercase;margin-bottom:.85rem;font-weight:600;display:flex;align-items:center;gap:.5rem;}
+.glass-section-label::before{content:'';display:block;width:14px;height:2px;background:var(--honey);border-radius:1px}
+.glass-gender-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.45rem}
+.glass-gender-btn{padding:.5rem .3rem;border-radius:var(--radius-xs);border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.08);font-size:.78rem;font-weight:500;color:rgba(255,255,255,.65);cursor:pointer;text-align:center;transition:all .2s;font-family:'DM Sans',sans-serif;backdrop-filter:blur(4px);}
+.glass-gender-btn:hover{border-color:rgba(255,255,255,.32);color:#fff;background:rgba(255,255,255,.14)}
+.glass-gender-btn.active{background:rgba(245,199,96,.2);border-color:rgba(245,199,96,.55);color:var(--honey);font-weight:600;}
+.glass-cta-btn{width:100%;padding:.82rem 1.5rem;background:linear-gradient(135deg,rgba(26,46,26,.9),rgba(45,74,45,.95));border:1px solid rgba(107,168,107,.4);color:#fff;border-radius:var(--radius-sm);font-size:.95rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:.6rem;transition:all .25s cubic-bezier(.22,1,.36,1);box-shadow:0 4px 20px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.1);margin-top:.25rem;backdrop-filter:blur(8px);}
+.glass-cta-btn:hover{background:linear-gradient(135deg,rgba(45,74,45,.95),rgba(74,122,74,.9));transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,.32),inset 0 1px 0 rgba(255,255,255,.12);}
+.glass-cta-btn .btn-arrow{display:inline-flex;transition:transform .2s}
+.glass-cta-btn:hover .btn-arrow{transform:translateX(4px)}
+.glass-skip{text-align:center;margin-top:1rem;font-size:.82rem;color:rgba(255,255,255,.45);}
+.glass-skip span{color:rgba(255,255,255,.75);font-weight:500;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.25);transition:.2s}
+.glass-skip span:hover{color:#fff;border-color:rgba(255,255,255,.55)}
+.glass-note{text-align:center;margin-top:.75rem;font-size:.74rem;color:rgba(255,255,255,.32);line-height:1.55;}
+
+/* ══ LOGIN — Split Layout ══ */
+#page-login{display:none;}
+
+/* Override food-bg-page for login to use split layout */
+#page-login.food-bg-page{
+  align-items:stretch;
+  justify-content:stretch;
+  background:none;
+  padding:0;
+}
+#page-login .intro-food-bg,
+#page-login .intro-food-overlay,
+#page-login .intro-inner{display:none!important}
+
+.login-split{
+  display:flex;
+  width:100%;
+  min-height:100vh;
+}
+
+/* LEFT PANEL — dark forest */
+.login-left{
+  width:42%;
+  flex-shrink:0;
+  background:var(--forest);
+  padding:3rem 2.75rem;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  position:relative;
+  overflow:hidden;
+}
+.login-left::before{
+  content:'';position:absolute;top:-80px;right:-80px;width:260px;height:260px;
+  background:radial-gradient(circle,rgba(245,199,96,.12) 0%,transparent 65%);
+  border-radius:50%;pointer-events:none;
+}
+.login-left::after{
+  content:'';position:absolute;bottom:-60px;left:-60px;width:200px;height:200px;
+  background:radial-gradient(circle,rgba(107,168,107,.15) 0%,transparent 65%);
+  border-radius:50%;pointer-events:none;
+}
+.ll-logo-row{display:flex;align-items:center;gap:.7rem;margin-bottom:2.5rem;}
+.ll-logo-mark{width:44px;height:44px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:13px;display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0;}
+.ll-logo-mark::before{content:'';position:absolute;width:24px;height:24px;border:2.5px solid var(--honey);border-radius:50%;top:10px;left:10px}
+.ll-logo-mark::after{content:'';position:absolute;width:8.5px;height:8.5px;background:var(--fern);border-radius:50%;top:17.8px;left:17.8px}
+.ll-logo-name{font-family:'Playfair Display',serif;font-size:1.55rem;font-weight:700;color:#fff;letter-spacing:-.1px}
+.ll-logo-name em{font-style:normal;color:var(--honey)}
+.ll-headline{font-family:'Playfair Display',serif;font-size:2.6rem;font-weight:700;color:#fff;line-height:1.18;margin-bottom:1rem;letter-spacing:-.5px;}
+.ll-headline em{font-style:normal;color:var(--honey)}
+.ll-desc{font-size:.9rem;color:rgba(255,255,255,.55);line-height:1.7;margin-bottom:2.5rem;max-width:320px;}
+.ll-features{display:flex;flex-direction:column;gap:.7rem;}
+.ll-feature{display:flex;align-items:flex-start;gap:.85rem;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:.8rem 1rem;}
+.ll-feature-icon{font-size:1.1rem;flex-shrink:0;margin-top:.05rem}
+.ll-feature-text{font-size:.86rem;color:rgba(255,255,255,.75);line-height:1.5}
+.ll-feature-text strong{color:#fff;font-weight:600;display:block;margin-bottom:.1rem}
+.ll-badges{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:2.5rem;}
+.ll-badge{font-size:.75rem;color:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.15);border-radius:20px;padding:.3rem .8rem;display:flex;align-items:center;gap:.35rem;}
+.ll-badge::before{content:'●';font-size:.45rem;color:var(--fern)}
+
+/* RIGHT PANEL — clean cream */
+.login-right{
+  flex:1;
+  background:#f8f5ee;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:3rem 2.5rem;
+}
+.login-form-wrap{
+  width:100%;
+  max-width:420px;
+  animation:pageIn .5s cubic-bezier(.22,1,.36,1) both;
+}
+
+/* Tab switcher */
+.auth-switcher{
+  display:flex;
+  background:#fff;
+  border:1.5px solid #e8e3d8;
+  border-radius:var(--radius-sm);
+  padding:.3rem;
+  margin-bottom:2rem;
+}
+.auth-switcher-tab{
+  flex:1;text-align:center;padding:.6rem;border-radius:7px;
+  font-size:.875rem;color:#9a9a8a;cursor:pointer;transition:all .22s;font-weight:500;
+}
+.auth-switcher-tab.active{
+  background:#fff;
+  color:var(--ink);
+  font-weight:600;
+  box-shadow:0 2px 8px rgba(0,0,0,.08);
+}
+
+/* Form title */
+.auth-form-title{font-family:'Playfair Display',serif;font-size:2rem;font-weight:700;color:var(--ink);margin-bottom:.3rem;}
+.auth-form-sub{font-size:.875rem;color:#9a9a8a;margin-bottom:1.75rem;line-height:1.5}
+
+/* Light inputs */
+.auth-panel{display:none}
+.auth-panel.active{display:block;animation:pageIn .35s ease both}
+
+.light-input-wrap{position:relative;margin-bottom:1rem}
+.light-input-icon{position:absolute;left:.9rem;top:50%;transform:translateY(-50%);font-size:.95rem;pointer-events:none;opacity:.45;}
+.light-input{
+  width:100%;
+  background:#fff;
+  border:1.5px solid #e8e3d8;
+  color:var(--ink);
+  padding:.75rem 1rem .75rem 2.55rem;
+  border-radius:var(--radius-sm);
+  font-size:.9rem;
+  font-family:'DM Sans',sans-serif;
+  transition:.2s;
+}
+.light-input::placeholder{color:#c0bbb0}
+.light-input:focus{outline:none;border-color:var(--sage);box-shadow:0 0 0 3px rgba(74,122,74,.1)}
+.light-label{display:block;font-size:.71rem;color:#9a9a8a;letter-spacing:.9px;text-transform:uppercase;margin-bottom:.4rem;font-weight:600}
+
+/* Password strength */
+.pw-strength{height:3px;border-radius:2px;background:rgba(0,0,0,.07);margin-top:.4rem;overflow:hidden}
+.pw-strength-fill{height:100%;border-radius:2px;transition:all .3s;width:0%}
+
+/* Remember row */
+.remember-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem}
+.checkbox-wrap{display:flex;align-items:center;gap:.5rem;cursor:pointer}
+.checkbox-wrap input[type=checkbox]{width:15px;height:15px;accent-color:var(--forest);cursor:pointer}
+.checkbox-wrap span{font-size:.84rem;color:var(--charcoal)}
+.forgot-link{font-size:.84rem;color:var(--charcoal);cursor:pointer;font-weight:500}
+.forgot-link:hover{color:var(--forest);text-decoration:underline}
+
+/* Sign in button — dark pill */
+.signin-cta-btn{
+  width:100%;padding:.88rem 1.5rem;
+  background:var(--forest);
+  border:none;border-radius:var(--radius-sm);
+  color:#fff;font-size:.95rem;font-weight:600;cursor:pointer;
+  font-family:'DM Sans',sans-serif;
+  display:flex;align-items:center;justify-content:center;gap:.55rem;
+  transition:all .25s cubic-bezier(.22,1,.36,1);
+  box-shadow:0 4px 18px rgba(26,46,26,.22);
+}
+.signin-cta-btn:hover{background:var(--moss);transform:translateY(-2px);box-shadow:0 8px 28px rgba(26,46,26,.3)}
+.signin-cta-btn .btn-arrow{display:inline-flex;transition:transform .2s}
+.signin-cta-btn:hover .btn-arrow{transform:translateX(4px)}
+
+/* Footer links */
+.auth-footer-text{text-align:center;font-size:.82rem;color:#9a9a8a;margin-top:1.1rem}
+.auth-footer-text a{color:var(--ink);font-weight:700;cursor:pointer;text-decoration:none}
+.auth-footer-text a:hover{text-decoration:underline}
+.terms-note{font-size:.76rem;color:#b0aaa0;text-align:center;margin-top:.9rem;line-height:1.5}
+.terms-note a{color:var(--charcoal);cursor:pointer}
+
+@media(max-width:780px){
+  .login-split{flex-direction:column}
+  .login-left{width:100%;padding:2rem 1.5rem;min-height:auto}
+  .ll-headline{font-size:1.9rem}
+  .ll-desc,.ll-badges{display:none}
+  .login-right{padding:2rem 1.25rem}
+}
+
+/* ══ NAV ══ */
+nav{position:sticky;top:0;z-index:200;background:rgba(247,244,237,.88);backdrop-filter:blur(18px);border-bottom:1px solid var(--border);padding:0 2.5rem;display:flex;align-items:center;justify-content:space-between;height:62px;}
+.nav-logo{display:flex;align-items:center;gap:.65rem;cursor:pointer}
+.logo-mark{width:36px;height:36px;background:var(--forest);border-radius:10px;display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0;}
+.logo-mark::before{content:'';position:absolute;width:20px;height:20px;border:2px solid var(--honey);border-radius:50%;top:8px;left:8px}
+.logo-mark::after{content:'';position:absolute;width:7px;height:7px;background:var(--fern);border-radius:50%;top:14.5px;left:14.5px}
+.logo-text{font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:700;color:var(--forest);letter-spacing:-.2px}
+.logo-text em{font-style:normal;color:var(--gold)}
+.nav-pills{display:flex;gap:.25rem}
+.nav-pill{padding:.42rem 1.1rem;border-radius:20px;font-size:.87rem;color:var(--muted);cursor:pointer;transition:all .2s;border:1px solid transparent;font-weight:500;}
+.nav-pill:hover{color:var(--forest);background:rgba(74,122,74,.07)}
+.nav-pill.active{color:var(--forest);border-color:var(--border);background:rgba(255,255,255,.92);box-shadow:0 2px 8px rgba(26,46,26,.07)}
+.nav-right{display:flex;align-items:center;gap:.9rem}
+.avatar{width:34px;height:34px;border-radius:50%;background:var(--forest);color:#fff;font-weight:600;font-size:.85rem;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .2s;}
+.avatar:hover{transform:scale(1.05)}
+.logout-btn{font-size:.8rem;color:var(--muted);cursor:pointer;padding:.38rem .9rem;border:1px solid var(--border);border-radius:20px;transition:.2s;background:transparent;}
+.logout-btn:hover{color:var(--red);border-color:rgba(184,50,50,.38)}
+
+/* ══ ANALYZE ══ */
+.analyze-layout{display:grid;grid-template-columns:1fr 1.25fr;gap:1.75rem;padding:2rem 2.5rem;max-width:1400px;margin:0 auto}
+.section-title{font-family:'Playfair Display',serif;font-size:2rem;font-weight:700;color:var(--forest);margin-bottom:.25rem}
+.section-sub{color:var(--muted);font-size:.9rem;margin-bottom:1.75rem}
+.section-label{font-size:.72rem;color:var(--muted);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:.7rem;font-weight:600}
+.upload-zone{border:2px dashed rgba(74,122,74,.28);border-radius:var(--radius);padding:2.2rem 1.5rem;text-align:center;cursor:pointer;transition:all .3s;position:relative;margin-bottom:1.2rem;background:rgba(255,255,255,.45);}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--sage);background:rgba(200,230,200,.1);transform:translateY(-1px);box-shadow:var(--shadow-md);}
+.upload-icon{font-size:2rem;margin-bottom:.7rem;display:block}
+.upload-title{font-size:1rem;font-weight:600;color:var(--forest);margin-bottom:.3rem}
+.upload-sub{font-size:.82rem;color:var(--muted)}
+.file-badges{display:flex;gap:.4rem;justify-content:center;margin-top:.8rem}
+.file-badge{background:var(--warm);color:var(--muted);padding:.22rem .7rem;border-radius:10px;font-size:.72rem;border:1px solid var(--border);font-weight:500}
+#preview-wrap{display:none;margin-bottom:1.2rem;border-radius:var(--radius-sm);overflow:hidden;border:1px solid var(--border);box-shadow:var(--shadow)}
+#preview-img{width:100%;max-height:240px;object-fit:cover;display:block}
+
+/* Profile condition banner in analyze */
+.profile-condition-banner{display:flex;align-items:center;gap:.65rem;background:rgba(26,46,26,.07);border:1px solid rgba(26,46,26,.14);border-radius:var(--radius-sm);padding:.75rem 1rem;margin-bottom:1.2rem;}
+.pcb-icon{font-size:1.2rem;flex-shrink:0}
+.pcb-text{font-size:.85rem;color:var(--forest)}
+.pcb-text strong{font-weight:600}
+.pcb-link{font-size:.78rem;color:var(--sage);margin-left:auto;cursor:pointer;white-space:nowrap;font-weight:500}
+.pcb-link:hover{text-decoration:underline}
+
+.results-empty{text-align:center;padding:4rem 2rem;color:var(--muted)}
+.results-empty .empty-icon{font-size:3rem;opacity:.32;display:block;margin-bottom:1rem}
+.food-pills{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:1rem}
+.food-pill{padding:.38rem 1rem;border-radius:18px;font-size:.82rem;cursor:pointer;border:1px solid var(--border);color:var(--muted);background:rgba(255,255,255,.7);transition:all .2s;font-weight:500}
+.food-pill.active{border-color:var(--forest);color:var(--forest);background:rgba(26,46,26,.07)}
+.detected-badge{display:inline-flex;align-items:center;gap:.4rem;background:rgba(42,110,42,.09);border:1px solid rgba(42,110,42,.22);color:var(--green);padding:.28rem .8rem;border-radius:16px;font-size:.8rem;font-weight:600;margin-bottom:.7rem}
+.fndds-badge{display:inline-flex;align-items:center;gap:.4rem;padding:.28rem .75rem;background:rgba(61,128,192,.07);border:1px solid rgba(61,128,192,.18);border-radius:12px;font-size:.74rem;color:var(--sky);font-weight:500;margin-bottom:1rem;margin-left:.5rem}
+.food-card-result{background:rgba(255,255,255,.88);border:1px solid var(--border);border-radius:var(--radius);padding:1.15rem;margin-bottom:1rem;display:flex;gap:1rem;align-items:flex-start;box-shadow:var(--shadow)}
+.food-emoji-box{width:54px;height:54px;background:var(--warm);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.7rem;flex-shrink:0;border:1px solid var(--border)}
+.food-name-big{font-family:'Playfair Display',serif;font-size:1.45rem;font-weight:700;color:var(--forest)}
+.food-desc{font-size:.82rem;color:var(--muted);margin-top:.1rem}
+.portion-ref{font-size:.78rem;color:var(--gold2);margin-top:.15rem;font-weight:500}
+.portion-control{margin:.9rem 0 1rem;padding:.9rem 1rem;background:var(--warm);border-radius:var(--radius-sm);border:1px solid var(--border)}
+.portion-row{display:flex;align-items:center;gap:.75rem}
+.portion-label-sm{font-size:.72rem;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;min-width:60px;font-weight:600}
+.slider{flex:1;-webkit-appearance:none;height:4px;border-radius:2px;background:rgba(74,122,74,.15);outline:none;cursor:pointer}
+.slider::-webkit-slider-thumb{-webkit-appearance:none;width:17px;height:17px;border-radius:50%;background:var(--forest);cursor:pointer;box-shadow:0 0 0 3px #fff,0 0 0 4.5px var(--fern)}
+.portion-val-display{font-family:'DM Mono',monospace;font-size:.92rem;font-weight:600;color:var(--forest);min-width:48px;text-align:right}
+.nutrition-grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:.7rem;margin:1rem 0}
+.nut-cell{background:var(--warm);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.85rem .7rem;text-align:center}
+.nut-val{font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:700;color:var(--forest)}
+.nut-unit{font-size:.72rem;color:var(--muted);font-family:'DM Sans',sans-serif}
+.nut-label{font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-top:.2rem;font-weight:500}
+.nut-bar{height:3px;background:rgba(0,0,0,.07);border-radius:2px;margin-top:.6rem}
+.nut-bar-fill{height:100%;border-radius:2px;transition:width .8s cubic-bezier(.22,1,.36,1)}
+.totals-card{background:var(--forest);border-radius:var(--radius);padding:1rem 1.25rem;margin-bottom:1rem;position:relative;overflow:hidden}
+.totals-card::before{content:'';position:absolute;top:-40px;right:-40px;width:120px;height:120px;background:rgba(255,255,255,.04);border-radius:50%}
+.totals-title{font-size:.72rem;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:1px;margin-bottom:.7rem;font-weight:600}
+.totals-row{display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem;text-align:center}
+.tot-val{font-family:'Playfair Display',serif;font-size:1.3rem;font-weight:700;color:#fff}
+.tot-unit{font-size:.68rem;color:rgba(255,255,255,.45)}
+.tot-label{font-size:.65rem;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:.5px;margin-top:.1rem}
+.ai-rec-box{background:rgba(255,255,255,.88);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem;box-shadow:var(--shadow)}
+.ai-dot{width:8px;height:8px;background:var(--sky);border-radius:50%;animation:blink 2s infinite;display:inline-block}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.ai-badge-pill{display:inline-flex;align-items:center;gap:.3rem;background:var(--warm);color:var(--muted);padding:.25rem .75rem;border-radius:14px;font-size:.78rem;border:1px solid var(--border)}
+.tags-row{display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.8rem}
+.tag-pill{padding:.28rem .72rem;border-radius:14px;font-size:.77rem;font-weight:500}
+.tag-green{background:rgba(42,110,42,.09);color:var(--green);border:1px solid rgba(42,110,42,.18)}
+.tag-yellow{background:rgba(184,134,11,.09);color:var(--gold);border:1px solid rgba(184,134,11,.18)}
+.tag-red{background:rgba(184,50,50,.07);color:var(--red);border:1px solid rgba(184,50,50,.18)}
+.ai-text-block{color:var(--charcoal);font-size:.9rem;line-height:1.78;border-left:3px solid rgba(74,122,74,.28);padding-left:1rem}
+.action-row{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-top:1rem}
+.saved-success{text-align:center;padding:.9rem;background:rgba(42,110,42,.09);border:1px solid rgba(42,110,42,.28);border-radius:var(--radius-sm);color:var(--green);font-size:.9rem;margin-top:1rem;font-weight:500}
+.ai-rec-header{display:flex;align-items:center;gap:.55rem;margin-bottom:1rem}
+.ai-rec-section-title{font-family:'Playfair Display',serif;font-size:1.05rem;font-weight:700;color:var(--forest)}
+.ai-cards-grid{display:grid;grid-template-columns:1fr 1fr;gap:.85rem;margin-bottom:1rem}
+.ai-rec-card{background:rgba(255,255,255,.88);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1.1rem 1.15rem;box-shadow:0 2px 14px rgba(26,46,26,.07);transition:box-shadow .2s,transform .2s;}
+.ai-rec-card:hover{box-shadow:var(--shadow-md);transform:translateY(-1px)}
+.ai-card-header{display:flex;align-items:center;gap:.55rem;margin-bottom:.65rem}
+.ai-card-icon{width:34px;height:34px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:1rem;}
+.ai-card-icon.green{background:rgba(42,110,42,.1);border:1px solid rgba(42,110,42,.18)}
+.ai-card-icon.amber{background:rgba(232,169,58,.12);border:1px solid rgba(232,169,58,.22)}
+.ai-card-icon.red{background:rgba(184,50,50,.08);border:1px solid rgba(184,50,50,.18)}
+.ai-card-icon.sky{background:rgba(61,128,192,.09);border:1px solid rgba(61,128,192,.18)}
+.ai-card-icon.forest{background:rgba(26,46,26,.08);border:1px solid rgba(26,46,26,.14)}
+.ai-card-label{font-size:.72rem;letter-spacing:.9px;text-transform:uppercase;font-weight:700}
+.ai-card-label.green{color:var(--green)}.ai-card-label.amber{color:var(--gold2)}.ai-card-label.red{color:var(--red)}.ai-card-label.sky{color:var(--sky)}.ai-card-label.forest{color:var(--forest)}
+.ai-card-body{font-size:.855rem;color:var(--charcoal);line-height:1.72}
+.ai-card-body ul{padding-left:1.1rem;margin:0}
+.ai-card-body ul li{margin-bottom:.28rem}
+.ai-card-body strong{color:var(--forest);font-weight:600}
+.ai-score-num{font-family:'Playfair Display',serif;font-size:2.1rem;font-weight:700;line-height:1;}
+.ai-score-denom{font-size:.85rem;color:var(--muted);font-weight:400}
+.ai-score-bar{width:100%;height:5px;border-radius:3px;background:rgba(0,0,0,.07);margin-top:.5rem;overflow:hidden}
+.ai-score-fill{height:100%;border-radius:3px;transition:width .9s cubic-bezier(.22,1,.36,1)}
+.ai-full-card{grid-column:1/-1}
+@media(max-width:680px){.ai-cards-grid{grid-template-columns:1fr}}
+
+/* ══ ANALYTICS ══ */
+.analytics-wrap{padding:2rem 2.5rem;max-width:1400px;margin:0 auto}
+.analytics-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:2rem}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem}
+.stat-card{background:rgba(255,255,255,.88);border:1px solid var(--border);border-radius:var(--radius);padding:1.2rem 1.25rem;position:relative;overflow:hidden;box-shadow:var(--shadow)}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.stat-card.sc-green::before{background:var(--fern)}.stat-card.sc-gold::before{background:var(--amber)}.stat-card.sc-blue::before{background:var(--sky)}.stat-card.sc-red::before{background:var(--blush)}
+.stat-lbl{font-size:.72rem;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:.45rem;font-weight:600}
+.stat-num{font-family:'Playfair Display',serif;font-size:2rem;font-weight:700;color:var(--forest)}
+.stat-unit{font-size:.85rem;color:var(--muted);font-family:'DM Sans',sans-serif;font-weight:400}
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.25rem}
+.chart-card{background:rgba(255,255,255,.88);border:1px solid var(--border);border-radius:var(--radius);padding:1.4rem;box-shadow:var(--shadow)}
+.chart-title{font-size:.95rem;font-weight:600;color:var(--forest);margin-bottom:1.2rem}
+.chart-wrap{position:relative;height:220px}
+.full-chart{margin-bottom:1.25rem}
+.full-chart .chart-wrap{height:175px}
+.score-section{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.25rem}
+.gauge-wrap{display:flex;align-items:center;justify-content:center;padding:1rem}
+.top-foods-list{display:flex;flex-direction:column;gap:.7rem}
+.top-food-row{display:flex;align-items:center;gap:.75rem}
+.tf-emoji{font-size:1.2rem;width:28px;text-align:center}
+.tf-name{flex:1;font-size:.87rem;color:var(--charcoal)}
+.tf-bar-wrap{width:90px;height:5px;background:rgba(74,122,74,.1);border-radius:3px}
+.tf-bar{height:100%;background:linear-gradient(90deg,var(--sage),var(--fern));border-radius:3px}
+.tf-count{font-size:.78rem;color:var(--muted);min-width:24px;text-align:right;font-family:'DM Mono',monospace}
+.meals-table-card{background:rgba(255,255,255,.88);border:1px solid var(--border);border-radius:var(--radius);padding:1.4rem;margin-bottom:1.25rem;box-shadow:var(--shadow)}
+.meals-table-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th{font-size:.7rem;color:var(--muted);letter-spacing:1px;text-transform:uppercase;text-align:left;padding:.5rem .75rem;border-bottom:1px solid var(--border);font-weight:600}
+td{font-size:.87rem;padding:.65rem .75rem;border-bottom:1px solid rgba(74,122,74,.07);color:var(--charcoal)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(74,122,74,.03)}
+.status-pill{padding:.2rem .7rem;border-radius:14px;font-size:.74rem;font-weight:600}
+.status-safe{background:rgba(42,110,42,.09);color:var(--green)}.status-caution{background:rgba(184,50,50,.07);color:var(--red)}
+.time-filter{display:flex;gap:.4rem}
+.time-btn{padding:.35rem .9rem;border:1px solid var(--border);border-radius:var(--radius-xs);font-size:.82rem;color:var(--muted);cursor:pointer;background:transparent;font-family:'DM Sans',sans-serif;transition:.2s;font-weight:500}
+.time-btn:hover{color:var(--forest)}.time-btn.active{background:var(--forest);color:#fff;border-color:var(--forest)}
+.insight-panel{background:var(--forest);border-radius:var(--radius);padding:1.5rem;color:#fff;box-shadow:var(--shadow-md)}
+.insight-panel-header{display:flex;align-items:center;gap:.75rem;margin-bottom:.9rem}
+.insight-icon{width:36px;height:36px;background:rgba(255,255,255,.1);border-radius:50%;display:flex;align-items:center;justify-content:center}
+.insight-panel-title{font-family:'Playfair Display',serif;font-size:1.1rem;color:#fff;font-weight:600}
+.insight-panel-text{color:rgba(255,255,255,.65);font-size:.9rem;line-height:1.78}
+.ai-insight-btn{margin-top:1rem}
+
+/* ══ HISTORY ══ */
+.history-wrap{padding:2rem 2.5rem;max-width:1200px;margin:0 auto}
+.history-grid{display:flex;flex-direction:column;gap:.6rem;margin-top:1.5rem}
+.history-row{display:flex;align-items:center;gap:1rem;background:rgba(255,255,255,.85);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.85rem 1.1rem;transition:all .2s;box-shadow:0 2px 10px rgba(26,46,26,.05)}
+.history-row:hover{background:#fff;box-shadow:var(--shadow-md);transform:translateX(3px)}
+.hr-emoji{font-size:1.5rem;width:38px;text-align:center}
+.hr-info{flex:1}.hr-name{font-size:.92rem;font-weight:600;color:var(--forest)}.hr-time{font-size:.75rem;color:var(--muted);margin-top:.1rem}
+.hr-macros{display:flex;gap:1.4rem}.hr-macro{text-align:center}
+.hr-macro-val{font-family:'DM Mono',monospace;font-size:.9rem;font-weight:600}
+.hr-macro-lbl{font-size:.67rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.cal-num{color:var(--amber)}.prot-num{color:var(--sky)}.carbs-num{color:var(--gold)}.fat-num{color:var(--coral)}
+
+/* ══ PROFILE ══ */
+.profile-wrap{padding:2rem 2.5rem;max-width:900px;margin:0 auto}
+.profile-card{display:flex;align-items:center;gap:2rem;background:var(--forest);border-radius:var(--radius);padding:2rem;margin-bottom:2rem;position:relative;overflow:hidden;box-shadow:var(--shadow-lg)}
+.profile-card::before{content:'';position:absolute;top:-50px;right:-50px;width:180px;height:180px;background:rgba(255,255,255,.04);border-radius:50%}
+.profile-avatar-big{width:72px;height:72px;border-radius:50%;background:var(--honey);color:var(--forest);font-weight:700;font-size:1.6rem;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.profile-name{font-family:'Playfair Display',serif;font-size:2rem;font-weight:700;color:#fff}
+.profile-joined{font-size:.85rem;color:rgba(255,255,255,.5);margin-top:.2rem}
+.profile-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem}
+.profile-section-title{font-size:.72rem;color:var(--muted);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:1rem;font-weight:600}
+.disease-list{display:flex;flex-direction:column;gap:.5rem}
+.disease-item{display:flex;align-items:center;gap:.75rem;padding:.7rem 1rem;background:var(--warm);border-radius:var(--radius-sm);font-size:.875rem;cursor:pointer;border:1.5px solid var(--border);transition:all .2s;font-weight:500}
+.disease-item:hover{border-color:var(--fern);color:var(--moss)}
+.disease-item.active{background:rgba(26,46,26,.06);border-color:var(--forest);color:var(--forest)}
+.disease-radio{width:14px;height:14px;border:2px solid var(--border);border-radius:50%;transition:.2s;flex-shrink:0}
+.disease-item.active .disease-radio{border-color:var(--forest);background:var(--forest)}
+.profile-body-card{background:rgba(255,255,255,.88);border:1px solid var(--border);border-radius:var(--radius);padding:1.35rem 1.4rem;box-shadow:var(--shadow);margin-bottom:1.25rem;}
+.profile-body-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.1rem;}
+.profile-body-title-text{font-size:.72rem;color:var(--muted);letter-spacing:1.2px;text-transform:uppercase;font-weight:600}
+.edit-body-btn{font-size:.78rem;color:var(--forest);border:1px solid var(--border);background:transparent;border-radius:14px;padding:.28rem .75rem;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:500;transition:.2s;}
+.edit-body-btn:hover{background:rgba(74,122,74,.07);border-color:var(--fern)}
+.body-stats-display{display:grid;grid-template-columns:repeat(4,1fr);gap:.75rem;margin-bottom:.65rem}
+.bsd-cell{text-align:center}.bsd-val{font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:700;color:var(--forest)}.bsd-unit{font-size:.72rem;color:var(--muted);font-family:'DM Sans',sans-serif}.bsd-lbl{font-size:.67rem;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-top:.15rem;font-weight:500}
+.body-edit-form{display:none;border-top:1px solid var(--border);padding-top:1rem;margin-top:.65rem}
+.body-edit-form.open{display:block;animation:pageIn .3s ease both}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:.65rem}
+.gender-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.45rem}
+.gender-btn{padding:.48rem .4rem;border-radius:var(--radius-xs);border:1.5px solid var(--border);background:rgba(255,255,255,.8);font-size:.8rem;font-weight:500;color:var(--muted);cursor:pointer;text-align:center;transition:all .2s;font-family:'DM Sans',sans-serif;}
+.gender-btn:hover{border-color:var(--fern);color:var(--moss)}.gender-btn.active{background:rgba(26,46,26,.07);border-color:var(--forest);color:var(--forest);font-weight:600}
+.bmi-chip{display:inline-flex;align-items:center;gap:.45rem;padding:.32rem .85rem;border-radius:14px;font-size:.8rem;font-weight:600;margin-top:.55rem;}
+.bmi-chip.underweight{background:rgba(61,128,192,.1);color:var(--sky);border:1px solid rgba(61,128,192,.22)}.bmi-chip.normal{background:rgba(42,110,42,.1);color:var(--green);border:1px solid rgba(42,110,42,.22)}.bmi-chip.overweight{background:rgba(184,134,11,.1);color:var(--gold);border:1px solid rgba(184,134,11,.22)}.bmi-chip.obese{background:rgba(184,50,50,.08);color:var(--red);border:1px solid rgba(184,50,50,.2)}
+
+/* DISEASE LIST extended */
+.disease-list-ext .disease-item{font-size:.82rem;padding:.55rem .85rem;}
+
+@media(max-width:900px){
+  .analyze-layout{grid-template-columns:1fr}
+  .stats-row,.charts-grid,.score-section,.profile-grid{grid-template-columns:1fr 1fr}
+  nav{padding:0 1rem}
+  .analyze-layout,.analytics-wrap,.history-wrap,.profile-wrap{padding:1.25rem}
+  .nutrition-grid-4{grid-template-columns:repeat(2,1fr)}
+  .glass-two-col{grid-template-columns:1fr}
+  .glass-gender-grid{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:600px){
+  .stats-row,.charts-grid,.score-section{grid-template-columns:1fr}
+  .nutrition-grid-4{grid-template-columns:repeat(2,1fr)}
+  .hr-macros{gap:.8rem}
+  .glass-header,.glass-body{padding-left:1.25rem;padding-right:1.25rem}
+}
+</style>
+</head>
+<body>
+
+<!-- SPINNER -->
+<div class="spinner-overlay" id="spinner">
+  <div class="spinner-title" id="spinner-title">Please wait…</div>
+  <div class="spinner-ring"></div>
+  <div class="spinner-steps" id="spinner-steps"></div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- ══════════════════════════
+     LOGIN / SIGNUP PAGE
+══════════════════════════ -->
+<div id="page-login" class="food-bg-page" style="display:none">
+  <div class="login-split">
+
+    <!-- LEFT — dark branding panel -->
+    <div class="login-left">
+      <div class="ll-logo-row">
+        <div class="ll-logo-mark"></div>
+        <span class="ll-logo-name">Nutri<em>Lens</em> AI</span>
+      </div>
+      <div class="ll-headline">Upload any food photo<br>— <em>know every</em><br>nutrient instantly.</div>
+      <p class="ll-desc">Indian, Asian, or global — understand every calorie, macro, and micronutrient in your plate.</p>
+      <div class="ll-features">
+        <div class="ll-feature">
+          <span class="ll-feature-icon">📷</span>
+          <div class="ll-feature-text"><strong>Vision AI</strong>Detect food from any photo automatically</div>
+        </div>
+        <div class="ll-feature">
+          <span class="ll-feature-icon">📊</span>
+          <div class="ll-feature-text"><strong>FNDDS Database</strong>Verified nutrient data for 10,000+ foods</div>
+        </div>
+        <div class="ll-feature">
+          <span class="ll-feature-icon">🩺</span>
+          <div class="ll-feature-text"><strong>Medical AI</strong>Personalized for diabetes, hypertension &amp; more</div>
+        </div>
+        <div class="ll-feature">
+          <span class="ll-feature-icon">⚖️</span>
+          <div class="ll-feature-text"><strong>Portion vision</strong>Estimate serving size directly from image</div>
+        </div>
+      </div>
+      <div class="ll-badges">
+        <span class="ll-badge">FNDDS Verified</span>
+        <span class="ll-badge">Medical AI</span>
+        <span class="ll-badge">Indian Foods</span>
+        <span class="ll-badge">Free to use</span>
+      </div>
+    </div>
+
+    <!-- RIGHT — clean form panel -->
+    <div class="login-right">
+      <div class="login-form-wrap">
+
+        <div class="auth-switcher">
+          <div class="auth-switcher-tab active" id="tab-signin-btn" onclick="switchAuthTab('signin')">Sign In</div>
+          <div class="auth-switcher-tab" id="tab-signup-btn" onclick="switchAuthTab('signup')">Create Account</div>
+        </div>
+
+        <!-- SIGN IN -->
+        <div class="auth-panel active" id="auth-signin">
+          <div class="auth-form-title" id="auth-header-title">Welcome back</div>
+          <div class="auth-form-sub" id="auth-header-sub">Sign in to continue your nutrition journey</div>
+
+          <div class="light-label">USERNAME</div>
+          <div class="light-input-wrap">
+            <span class="light-input-icon">👤</span>
+            <input class="light-input" type="text" id="login-user" placeholder="Enter your username" autocomplete="username"/>
+          </div>
+
+          <div class="light-label">PASSWORD</div>
+          <div class="light-input-wrap">
+            <span class="light-input-icon">🔒</span>
+            <input class="light-input" type="password" id="login-pass" placeholder="Enter your password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"/>
+          </div>
+
+          <div class="remember-row">
+            <label class="checkbox-wrap"><input type="checkbox" id="remember-me" checked/><span>Remember me</span></label>
+            <span class="forgot-link" onclick="toast('Password reset coming soon','info')">Forgot password?</span>
+          </div>
+          <button class="signin-cta-btn" onclick="doLogin()">Sign In <span class="btn-arrow">→</span></button>
+          <div class="auth-footer-text">Don't have an account? <a onclick="switchAuthTab('signup')">Create one free</a></div>
+        </div>
+
+        <!-- SIGN UP -->
+        <div class="auth-panel" id="auth-signup">
+          <div class="auth-form-title">Create account</div>
+          <div class="auth-form-sub">Start your nutrition journey for free</div>
+
+          <div class="light-label">USERNAME</div>
+          <div class="light-input-wrap">
+            <span class="light-input-icon">👤</span>
+            <input class="light-input" type="text" id="reg-user" placeholder="Choose a username" autocomplete="username"/>
+          </div>
+
+          <div class="light-label">PASSWORD</div>
+          <div class="light-input-wrap">
+            <span class="light-input-icon">🔒</span>
+            <input class="light-input" type="password" id="reg-pass" placeholder="Password (min 6 chars)" autocomplete="new-password" oninput="updatePwStrength(this.value)"/>
+            <div class="pw-strength" style="margin-top:.35rem"><div class="pw-strength-fill" id="pw-strength-fill"></div></div>
+          </div>
+
+          <div class="light-label">CONFIRM PASSWORD</div>
+          <div class="light-input-wrap">
+            <span class="light-input-icon">🔒</span>
+            <input class="light-input" type="password" id="reg-confirm" placeholder="Confirm password" autocomplete="new-password" onkeydown="if(event.key==='Enter')doRegister()"/>
+          </div>
+          <button class="signin-cta-btn" onclick="doRegister()">Create Account <span class="btn-arrow">→</span></button>
+          <div class="terms-note">By creating an account you agree to our <a>Terms of Service</a> and <a>Privacy Policy</a>.</div>
+          <div class="auth-footer-text">Already have an account? <a onclick="switchAuthTab('signin')">Sign in</a></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════
+     PROFILE SETUP (after registration / first login)
+══════════════════════════ -->
+<div id="page-intro" class="food-bg-page" style="display:none">
+  <div class="intro-food-bg"></div>
+  <div class="intro-food-overlay"></div>
+  <div class="intro-inner">
+    <div class="glass-card-outer">
+      <div class="glass-header">
+        <div class="glass-logo-row">
+          <div class="glass-logo-mark"></div>
+          <span class="glass-logo-name">Nutri<em>Lens</em></span>
+        </div>
+        <div class="glass-user-chip">
+          <div class="glass-user-avatar" id="intro-avatar">?</div>
+          <span class="glass-user-name">Welcome, <strong id="intro-username" style="color:#fff">—</strong> 👋</span>
+        </div>
+        <div class="glass-header-title">Set up your profile</div>
+        <div class="glass-header-sub">Helps us personalize your nutrition analysis — takes under a minute.</div>
+        <div class="glass-dots">
+          <div class="glass-dot active"></div>
+          <div class="glass-dot active"></div>
+          <div class="glass-dot"></div>
+        </div>
+      </div>
+      <div class="glass-body">
+        <div class="glass-section-label">Personal Info</div>
+        <div class="glass-input-wrap">
+          <span class="glass-input-icon">👤</span>
+          <input class="glass-input" type="text" id="ob-name" placeholder="Display name (e.g. Priya Sharma)"/>
+        </div>
+        <div class="glass-two-col">
+          <div>
+            <div class="glass-label">Age</div>
+            <div class="glass-input-wrap" style="margin-bottom:0">
+              <span class="glass-input-icon">🎂</span>
+              <input class="glass-input" type="number" id="ob-age" placeholder="e.g. 28" min="10" max="100"/>
+            </div>
+          </div>
+          <div>
+            <div class="glass-label">Height (cm)</div>
+            <div class="glass-input-wrap" style="margin-bottom:0">
+              <span class="glass-input-icon">📏</span>
+              <input class="glass-input" type="number" id="ob-height" placeholder="e.g. 165" min="100" max="250"/>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:.75rem">
+          <div class="glass-label">Weight (kg)</div>
+          <div class="glass-input-wrap">
+            <span class="glass-input-icon">⚖️</span>
+            <input class="glass-input" type="number" id="ob-weight" placeholder="e.g. 62" min="30" max="300"/>
+          </div>
+        </div>
+        <div>
+          <div class="glass-label">Gender</div>
+          <div class="glass-gender-grid" id="ob-gender-grid">
+            <div class="glass-gender-btn active" data-g="Male"       onclick="selectGender(this,'ob')">👨 Male</div>
+            <div class="glass-gender-btn"        data-g="Female"     onclick="selectGender(this,'ob')">👩 Female</div>
+            <div class="glass-gender-btn"        data-g="Non-binary" onclick="selectGender(this,'ob')">🧑 Non-binary</div>
+            <div class="glass-gender-btn"        data-g="Prefer not" onclick="selectGender(this,'ob')">🔒 Private</div>
+          </div>
+        </div>
+        <div class="glass-divider"></div>
+        <div class="glass-section-label">Health Condition</div>
+        <div class="glass-select-wrap glass-input-wrap">
+          <span class="glass-input-icon">🩺</span>
+          <select class="glass-select" id="ob-condition" style="padding-left:2.5rem">
+            <option value="None">No condition — healthy</option>
+            <option value="Diabetes">Type 2 Diabetes</option>
+            <option value="Type1Diabetes">Type 1 Diabetes</option>
+            <option value="Hypertension">Hypertension</option>
+            <option value="Obesity">Obesity</option>
+            <option value="HighCholesterol">High Cholesterol</option>
+            <option value="HeartDisease">Heart Disease</option>
+            <option value="PCOS">PCOS / PCOD</option>
+            <option value="Thyroid">Thyroid Disorder</option>
+            <option value="KidneyDisease">Kidney Disease</option>
+            <option value="Celiac">Celiac Disease</option>
+          </select>
+        </div>
+        <button class="glass-cta-btn" onclick="saveOnboarding()">Save &amp; Get Started <span class="btn-arrow">→</span></button>
+        <p class="glass-skip">Not now — <span onclick="skipOnboarding()">skip to app</span></p>
+        <p class="glass-note">All details can be updated in your Profile page anytime.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════
+     MAIN APP
+══════════════════════════ -->
+<div id="app" style="display:none">
+
+<nav>
+  <div class="nav-logo" onclick="goPage('analyze')">
+    <div class="logo-mark"></div>
+    <span class="logo-text">Nutri<em>Lens</em></span>
+  </div>
+  <div class="nav-pills">
+    <div class="nav-pill active" id="nl-analyze"   onclick="goPage('analyze')">Analyze</div>
+    <div class="nav-pill"       id="nl-analytics"  onclick="goPage('analytics')">Analytics</div>
+    <div class="nav-pill"       id="nl-history"    onclick="goPage('history')">History</div>
+    <div class="nav-pill"       id="nl-profile"    onclick="goPage('profile')">Profile</div>
+  </div>
+  <div class="nav-right">
+    <div class="avatar" id="nav-avatar" title="Your profile" onclick="goPage('profile')">?</div>
+    <div class="logout-btn" onclick="doLogout()">Sign out</div>
+  </div>
+</nav>
+
+<!-- ANALYZE -->
+<div id="page-analyze" class="page">
+  <div class="analyze-layout">
+    <div>
+      <div class="section-title">Analyze your food</div>
+      <div class="section-sub">Upload a photo · NutriLens AI detects what you're eating</div>
+
+      <!-- Profile condition banner -->
+      <div class="profile-condition-banner" id="condition-banner">
+        <span class="pcb-icon">🩺</span>
+        <span class="pcb-text">Health condition: <strong id="banner-condition">None</strong></span>
+        <span class="pcb-link" onclick="goPage('profile')">Change in Profile →</span>
+      </div>
+
+      <div class="upload-zone" id="upload-zone"
+           onclick="document.getElementById('file-input').click()"
+           ondrop="handleDrop(event)" ondragover="handleDragover(event)" ondragleave="handleDragleave()">
+        <span class="upload-icon">📷</span>
+        <div class="upload-title">Drop your food photo here</div>
+        <div class="upload-sub">Supports Indian, Asian, Mediterranean &amp; global cuisines</div>
+        <div class="file-badges">
+          <span class="file-badge">JPG</span><span class="file-badge">PNG</span>
+          <span class="file-badge">JPEG</span><span class="file-badge">JFIF</span>
+        </div>
+        <input type="file" id="file-input" accept=".jpg,.jpeg,.png,.jfif" style="display:none" onchange="handleFile(this)"/>
+      </div>
+      <div id="preview-wrap"><img id="preview-img" src="" alt="preview"/></div>
+      <button class="btn btn-forest btn-full" style="margin-top:.5rem" onclick="doAnalyze()">🔍 Analyze Food</button>
+    </div>
+    <div id="results-panel">
+      <div class="results-empty" id="empty-state">
+        <span class="empty-icon">🍽️</span>
+        <h3 style="color:var(--muted);margin-bottom:.5rem">No analysis yet</h3>
+        <p style="color:var(--muted);font-size:.875rem">Upload a food photo and click Analyze<br>to see nutrition breakdown &amp; AI recommendations</p>
+      </div>
+      <div id="results-content" style="display:none"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ANALYTICS -->
+<div id="page-analytics" class="page">
+  <div class="analytics-wrap">
+    <div class="analytics-header">
+      <div>
+        <div class="section-title">Nutrition History</div>
+        <div class="section-sub">Overview of your eating patterns</div>
+      </div>
+      <div class="time-filter">
+        <button class="time-btn" onclick="filterAnalytics(7,this)">7d</button>
+        <button class="time-btn" onclick="filterAnalytics(30,this)">30d</button>
+        <button class="time-btn active" onclick="filterAnalytics(0,this)">All</button>
+      </div>
+    </div>
+    <div id="analytics-content"><div style="text-align:center;padding:4rem;color:var(--muted)">Loading analytics…</div></div>
+  </div>
+</div>
+
+<!-- HISTORY -->
+<div id="page-history" class="page">
+  <div class="history-wrap">
+    <div class="section-title">Meal History</div>
+    <div class="section-sub">Every meal you've logged</div>
+    <div id="history-content"><div style="text-align:center;padding:3rem;color:var(--muted)">Loading history…</div></div>
+  </div>
+</div>
+
+<!-- PROFILE -->
+<div id="page-profile" class="page">
+  <div class="profile-wrap">
+    <div class="section-title">Profile</div>
+    <div class="section-sub">Your account &amp; health preferences</div>
+    <div class="profile-card">
+      <div class="profile-avatar-big" id="profile-avatar">?</div>
+      <div style="flex:1">
+        <div class="profile-name" id="profile-name">—</div>
+        <div class="profile-joined" id="profile-meta">NutriLens Member</div>
+      </div>
+      <div id="profile-bmi-display"></div>
+    </div>
+
+    <div class="profile-body-card">
+      <div class="profile-body-title">
+        <span class="profile-body-title-text">Body Details</span>
+        <button class="edit-body-btn" onclick="toggleBodyEdit()">✏️ Edit</button>
+      </div>
+      <div id="body-display">
+        <div class="body-stats-display">
+          <div class="bsd-cell"><div class="bsd-val" id="disp-age">—</div><div class="bsd-lbl">Age</div><div class="bsd-unit">yrs</div></div>
+          <div class="bsd-cell"><div class="bsd-val" id="disp-height">—</div><div class="bsd-lbl">Height</div><div class="bsd-unit">cm</div></div>
+          <div class="bsd-cell"><div class="bsd-val" id="disp-weight">—</div><div class="bsd-lbl">Weight</div><div class="bsd-unit">kg</div></div>
+          <div class="bsd-cell"><div class="bsd-val" id="disp-gender">—</div><div class="bsd-lbl">Gender</div></div>
+        </div>
+        <div id="bmi-chip-wrap"></div>
+      </div>
+      <div class="body-edit-form" id="body-edit-form">
+        <div class="two-col">
+          <div class="form-group" style="margin-bottom:.75rem">
+            <label>Age</label>
+            <div class="input-icon-wrap"><span class="icon">🎂</span><input type="number" id="edit-age" placeholder="e.g. 25" min="10" max="100"/></div>
+          </div>
+          <div class="form-group" style="margin-bottom:.75rem">
+            <label>Height (cm)</label>
+            <div class="input-icon-wrap"><span class="icon">📏</span><input type="number" id="edit-height" placeholder="e.g. 170" min="100" max="250"/></div>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:.75rem">
+          <label>Weight (kg)</label>
+          <div class="input-icon-wrap"><span class="icon">⚖️</span><input type="number" id="edit-weight" placeholder="e.g. 65" min="30" max="300"/></div>
+        </div>
+        <div class="form-group" style="margin-bottom:.85rem">
+          <label>Gender</label>
+          <div class="gender-grid" id="edit-gender-grid">
+            <div class="gender-btn active" data-g="Male"       onclick="selectGender(this,'edit')">👨 Male</div>
+            <div class="gender-btn"        data-g="Female"     onclick="selectGender(this,'edit')">👩 Female</div>
+            <div class="gender-btn"        data-g="Non-binary" onclick="selectGender(this,'edit')">🧑 Non-binary</div>
+            <div class="gender-btn"        data-g="Prefer not" onclick="selectGender(this,'edit')">🔒 Private</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:.65rem">
+          <button class="btn btn-forest" style="flex:1" onclick="saveBodyDetails()">Save Changes</button>
+          <button class="btn btn-ghost"  style="flex:1" onclick="toggleBodyEdit(false)">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="profile-grid">
+      <div class="card">
+        <div class="profile-section-title">Health Condition</div>
+        <div class="disease-list disease-list-ext">
+          <div class="disease-item active" data-d="None"            onclick="profileSetDisease(this,'None')"><div class="disease-radio"></div>👤 None</div>
+          <div class="disease-item"        data-d="Diabetes"        onclick="profileSetDisease(this,'Diabetes')"><div class="disease-radio"></div>💉 Diabetes (Type 2)</div>
+          <div class="disease-item"        data-d="Type1Diabetes"   onclick="profileSetDisease(this,'Type1Diabetes')"><div class="disease-radio"></div>💉 Diabetes (Type 1)</div>
+          <div class="disease-item"        data-d="Hypertension"    onclick="profileSetDisease(this,'Hypertension')"><div class="disease-radio"></div>❤️ Hypertension</div>
+          <div class="disease-item"        data-d="Obesity"         onclick="profileSetDisease(this,'Obesity')"><div class="disease-radio"></div>⚖️ Obesity</div>
+          <div class="disease-item"        data-d="HighCholesterol" onclick="profileSetDisease(this,'HighCholesterol')"><div class="disease-radio"></div>🩸 High Cholesterol</div>
+          <div class="disease-item"        data-d="HeartDisease"    onclick="profileSetDisease(this,'HeartDisease')"><div class="disease-radio"></div>🫀 Heart Disease</div>
+          <div class="disease-item"        data-d="PCOS"            onclick="profileSetDisease(this,'PCOS')"><div class="disease-radio"></div>🔬 PCOS / PCOD</div>
+          <div class="disease-item"        data-d="KidneyDisease"   onclick="profileSetDisease(this,'KidneyDisease')"><div class="disease-radio"></div>🫘 Kidney Disease</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="profile-section-title">Quick Stats</div>
+        <div id="profile-stats" style="color:var(--muted);font-size:.88rem">Loading…</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /#app -->
+
+<script>
+/* ════════ STATE ════════ */
+const S={
+  username:null,displayName:null,disease:'None',
+  analysisResult:null,analysisSaved:false,selectedFoodIdx:0,
+  detectedPortions:{},currentPortions:{},
+  body:{age:'',height:'',weight:'',gender:'Male'},
+  isNewUser:false,
+};
+const API='http://localhost:8000';
+const $=id=>document.getElementById(id);
+
+/* ════════ TOAST ════════ */
+function toast(msg,type='info'){
+  const t=$('toast');t.textContent=msg;t.className=`show ${type}`;
+  clearTimeout(t._t);t._t=setTimeout(()=>t.className='',3400);
+}
+
+/* ════════ SPINNER ════════ */
+function spin(on,mode){
+  const titles={auth:'Signing you in…',register:'Creating your account…',analyze:'Analyzing your meal with NutriLens AI…',save:'Saving…'};
+  const steps={
+    analyze:['🔍 NutriLens Vision identifying foods…','📊 Looking up FNDDS nutrient data…','💊 Personalizing recommendations…']
+  };
+  if(on&&mode){
+    $('spinner-title').textContent=titles[mode]||'Please wait…';
+    $('spinner-steps').innerHTML=(steps[mode]||[]).map(s=>`<div class="spinner-step">${s}</div>`).join('');
+  }
+  $('spinner').classList.toggle('active',on);
+}
+
+/* ════════ API ════════ */
+async function api(method,path,body,isForm=false){
+  const opts={method,headers:{}};
+  if(body){if(isForm){opts.body=body}else{opts.headers['Content-Type']='application/json';opts.body=JSON.stringify(body)}}
+  const r=await fetch(API+path,opts);
+  const data=await r.json();
+  if(!r.ok)throw new Error(data.detail||'Request failed');
+  return data;
+}
+
+/* ════════ AUTH ════════ */
+function switchAuthTab(tab){
+  ['signin','signup'].forEach(t=>{
+    $('auth-'+t).classList.toggle('active',t===tab);
+    $('tab-'+t+'-btn').classList.toggle('active',t===tab);
+  });
+  if(tab==='signup'){
+    $('auth-header-title').textContent='Create account';
+    $('auth-header-sub').textContent='Join NutriLens — your AI nutrition companion';
+  }else{
+    $('auth-header-title').textContent='Welcome back';
+    $('auth-header-sub').textContent='Sign in to continue your nutrition journey';
+  }
+}
+
+function updatePwStrength(val){
+  const fill=$('pw-strength-fill');
+  let score=0;
+  if(val.length>=6)score++;if(val.length>=10)score++;
+  if(/[A-Z]/.test(val))score++;if(/[0-9]/.test(val))score++;if(/[^a-zA-Z0-9]/.test(val))score++;
+  const pct=[0,20,45,65,85,100][score];
+  const colors=['','#b83232','#d4a017','#e8a93a','#6ba86b','#2a6e2a'][score];
+  fill.style.width=pct+'%';fill.style.background=colors;
+}
+
+async function doLogin(){
+  const u=$('login-user').value.trim(),p=$('login-pass').value;
+  if(!u||!p)return toast('Enter username and password','error');
+  try{
+    spin(true,'auth');
+    await api('POST','/api/auth/login',{username:u,password:p});
+    S.username=u;S.isNewUser=false;
+    spin(false);
+    initApp();
+  }catch(e){toast(e.message,'error');spin(false);}
+}
+
+async function doRegister(){
+  const u=$('reg-user').value.trim(),p=$('reg-pass').value,c=$('reg-confirm').value;
+  if(!u||!p||!c)return toast('Please fill all fields','error');
+  if(p!==c)return toast('Passwords do not match','error');
+  if(p.length<6)return toast('Password must be at least 6 characters','error');
+  try{
+    spin(true,'register');
+    await api('POST','/api/auth/register',{username:u,password:p});
+    spin(false);
+    // Auto-login after register and show profile setup
+    S.username=u;S.isNewUser=true;
+    initApp();
+  }catch(e){toast(e.message,'error');spin(false);}
+}
+
+function doLogout(){
+  S.username=null;S.displayName=null;S.analysisResult=null;S.analysisSaved=false;S.selectedFoodIdx=0;S.disease='None';
+  $('app').style.display='none';
+  $('page-intro').style.display='none';
+  $('page-login').style.display='flex';
+  $('login-user').value='';$('login-pass').value='';
+}
+
+function initApp(){
+  $('page-login').style.display='none';
+  const abbr=S.username.slice(0,2).toUpperCase();
+  $('nav-avatar').textContent=abbr;
+  $('profile-avatar').textContent=abbr;
+  $('intro-username').textContent=S.username;
+  $('intro-avatar').textContent=abbr;
+  // Load stored body & profile from server
+  loadProfile().then(()=>{
+    // Always show profile setup for new users; for returning users go straight to app
+    if(S.isNewUser){
+      showOnboarding();
+    }else{
+      launchApp();
+    }
+  });
+}
+
+async function loadProfile(){
+  try{
+    const p=await api('GET',`/api/profile/${S.username}`);
+    if(p.age||p.height||p.weight){
+      S.body={age:p.age||'',height:p.height||'',weight:p.weight||'',gender:p.gender||'Male'};
+    }
+    if(p.disease) S.disease=p.disease;
+    if(p.name) S.displayName=p.name;
+  }catch(e){
+    // Fall back to local storage
+    const stored=loadBodyLocal(S.username);
+    if(stored){S.body=stored;}
+  }
+}
+
+function showOnboarding(){
+  $('page-intro').style.display='flex';
+  $('app').style.display='none';
+}
+
+function launchApp(page){
+  $('page-intro').style.display='none';
+  $('app').style.display='block';
+  // Update nav avatar with display name
+  const displayN=S.displayName||S.username;
+  $('nav-avatar').textContent=displayN.slice(0,2).toUpperCase();
+  $('profile-avatar').textContent=displayN.slice(0,2).toUpperCase();
+  $('profile-name').textContent=displayN;
+  // Update condition banner
+  $('banner-condition').textContent=S.disease==='None'?'None (Healthy)':S.disease;
+  goPage(page||'analyze');
+}
+
+/* ════════ ONBOARDING ════════ */
+async function saveOnboarding(){
+  const name=$('ob-name').value.trim();
+  const age=$('ob-age').value.trim();
+  const height=$('ob-height').value.trim();
+  const weight=$('ob-weight').value.trim();
+  const gender=_selectedGender.ob||'Male';
+  const disease=$('ob-condition').value;
+  S.body={age,height,weight,gender};
+  if(name) S.displayName=name;
+  S.disease=disease;
+  saveBodyLocal(S.username,S.body);
+  try{
+    await api('POST','/api/profile/save',{username:S.username,name,age,height,weight,gender,disease});
+  }catch(e){}
+  // Sync disease items in profile page
+  document.querySelectorAll('.disease-item').forEach(d=>d.classList.toggle('active',d.dataset.d===disease));
+  toast('Profile saved! Welcome to NutriLens 🌿','success');
+  launchApp();
+}
+
+function skipOnboarding(){
+  launchApp();
+}
+
+/* ════════ NAV ════════ */
+function goPage(name){
+  document.querySelectorAll('#app .page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-pill').forEach(l=>l.classList.remove('active'));
+  $('page-'+name).classList.add('active');
+  const nl=$('nl-'+name);if(nl)nl.classList.add('active');
+  // Update banner on each analyze visit
+  if(name==='analyze'){$('banner-condition').textContent=S.disease==='None'?'None (Healthy)':S.disease;}
+  if(name==='analytics')loadAnalytics();
+  if(name==='history')loadHistory();
+  if(name==='profile'){loadProfileStats();renderBodyDisplay();}
+}
+
+/* ════════ ANALYZE ════════ */
+let selectedFile=null;
+function handleDrop(e){e.preventDefault();$('upload-zone').classList.remove('drag');const f=e.dataTransfer.files[0];if(f)setFile(f);}
+function handleDragover(e){e.preventDefault();$('upload-zone').classList.add('drag');}
+function handleDragleave(){$('upload-zone').classList.remove('drag');}
+function handleFile(inp){if(inp.files[0])setFile(inp.files[0]);}
+function setFile(f){selectedFile=f;$('preview-img').src=URL.createObjectURL(f);$('preview-wrap').style.display='block';}
+
+/* Profile disease setter — only from profile page */
+function profileSetDisease(el,disease){
+  S.disease=disease;
+  document.querySelectorAll('.disease-item').forEach(d=>d.classList.toggle('active',d.dataset.d===disease));
+  $('banner-condition').textContent=disease==='None'?'None (Healthy)':disease;
+  // Save to server
+  api('POST','/api/profile/save',{
+    username:S.username,name:S.displayName,
+    age:S.body.age,height:S.body.height,weight:S.body.weight,
+    gender:S.body.gender,disease
+  }).catch(()=>{});
+  toast('Health condition updated — analyses will use '+disease,'success');
+}
+
+async function doAnalyze(){
+  if(!selectedFile)return toast('Please upload a food image first','error');
+  const fd=new FormData();
+  fd.append('file',selectedFile);
+  fd.append('username',S.username);
+  try{
+    spin(true,'analyze');
+    const res=await api('POST','/api/analyze',fd,true);
+    if(res.status==='not_food'){
+      toast('No food detected in this image. Try a clearer photo.','error');
+      return;
+    }
+    S.analysisResult=res;S.selectedFoodIdx=0;
+    S.detectedPortions={};S.currentPortions={};S.analysisSaved=false;
+    res.per_food_data.forEach(f=>{S.detectedPortions[f.index]=f.detected_portion;S.currentPortions[f.index]=f.detected_portion;});
+    renderResults();
+  }catch(e){toast(e.message,'error');}finally{spin(false);}
+}
+
+function renderResults(){
+  if(!S.analysisResult)return;
+  $('empty-state').style.display='none';$('results-content').style.display='block';
+  renderFoodContent();
+}
+
+function renderFoodContent(){
+  const res=S.analysisResult,pfd=res.per_food_data;
+  const sel=Math.min(S.selectedFoodIdx,pfd.length-1),active=pfd[sel];
+  if(!active)return;
+  let html='';
+  if(pfd.length>1){
+    html+=`<div style="margin-bottom:.75rem;font-size:.82rem;color:var(--muted)">🍽️ ${pfd.length} items detected: `;
+    html+=pfd.map(f=>`<span style="background:rgba(42,110,42,.09);color:var(--green);padding:.2rem .65rem;border-radius:12px;font-size:.77rem;font-weight:500">${f.label} ${Math.round(f.confidence*100)}%</span>`).join(' ');
+    html+='</div>';
+    html+='<div class="food-pills">';
+    pfd.forEach((f,i)=>{html+=`<div class="food-pill ${i===sel?'active':''}" onclick="selectFood(${i})">${f.emoji} ${cap(f.label)}</div>`;});
+    html+='</div>';
+  }
+  const curP=S.currentPortions[sel]||S.detectedPortions[sel];
+  html+=`<span class="detected-badge">📷 NutriLens detected: <strong>${S.detectedPortions[sel]}g</strong></span><span class="fndds-badge">📚 FNDDS 2019–2020</span><br style="margin:.4rem 0;display:block"/>`;
+  html+=`<div class="food-card-result">
+    <div class="food-emoji-box">${active.emoji}</div>
+    <div>
+      <div class="food-name-big">${cap(active.label)}</div>
+      <div class="food-desc">${active.caption}</div>
+      <div class="portion-ref">NutriLens estimated: ~${S.detectedPortions[sel]}g · Base ref: 100g</div>
+    </div>
+  </div>`;
+  html+=`<div class="portion-control">
+    <div class="section-label" style="margin-bottom:.6rem">⚖️ Adjust Portion Size</div>
+    <div class="portion-row">
+      <span class="portion-label-sm">Portion</span>
+      <input type="range" class="slider" min="25" max="600" step="25" value="${curP}" id="portion-slider" oninput="onPortionChange(${sel},this.value)"/>
+      <span class="portion-val-display" id="portion-display">${curP}g</span>
+    </div>
+    ${curP!==S.detectedPortions[sel]?`<div style="font-size:.75rem;color:var(--muted);margin-top:.4rem">NutriLens estimated: ${S.detectedPortions[sel]}g</div>`:''}
+  </div>`;
+  html+=renderNutritionGrid(active.nutrition,active.label,curP);
+  if(pfd.length>1){
+    let tc=0,tp=0,th=0,tf=0;
+    pfd.forEach((f,i)=>{
+      const p=S.currentPortions[i]||S.detectedPortions[i],scale=p/100;
+      const n=f.base_nutrition;
+      tc+=Math.round(n.calories*scale);tp+=Math.round(n.protein*scale);th+=Math.round(n.carbs*scale);tf+=Math.round(n.fat*scale);
+    });
+    html+=`<div class="totals-card"><div class="totals-title">🍽️ Combined Meal Totals (all ${pfd.length} foods)</div>
+    <div class="totals-row">
+      <div><div class="tot-val">${tc}</div><div class="tot-unit">kcal</div><div class="tot-label">Calories</div></div>
+      <div><div class="tot-val">${tp}g</div><div class="tot-label">Protein</div></div>
+      <div><div class="tot-val">${th}g</div><div class="tot-label">Carbs</div></div>
+      <div><div class="tot-val">${tf}g</div><div class="tot-label">Fat</div></div>
+    </div></div>`;
+  }
+  const tagsHtml=active.tags.map(t=>`<span class="tag-pill tag-${t.color}">${t.label}</span>`).join('');
+  html+=renderAiRecCards(active.ai_rec,active.label,tagsHtml);
+  if(S.analysisSaved){
+    html+='<div class="saved-success">✅ Meal logged to your history!</div>';
+  }else{
+    html+=`<div class="action-row">
+      <button class="btn btn-green btn-full" onclick="doConsumed()">✅ Consumed</button>
+      <button class="btn btn-red btn-full" onclick="doNotConsumed()">❌ Not Consumed</button>
+    </div>`;
+  }
+  $('results-content').innerHTML=html;
+}
+
+function renderAiRecCards(aiRec, label, tagsHtml) {
+  // aiRec is now always a structured object
+  const r = aiRec || {};
+  const score = r.score ?? null;
+  const scoreMax = 10;
+  const scorePct = score !== null ? Math.round((score / scoreMax) * 100) : 0;
+  let scoreColor = 'var(--green)', scoreBarColor = '#4a7a4a';
+  if (score !== null) {
+    if (score < 4)  { scoreColor = 'var(--red)';   scoreBarColor = '#b83232'; }
+    else if (score < 7) { scoreColor = 'var(--gold2)'; scoreBarColor = '#d4a017'; }
+  }
+
+  const tailored = S.disease === 'None' ? 'General' : S.disease;
+
+  function mkList(arr) {
+    if (!arr || !arr.length) return '<span style="color:var(--muted);font-size:.82rem">—</span>';
+    return '<ul>' + arr.map(item => `<li>${item}</li>`).join('') + '</ul>';
+  }
+
+  return `
+  <div class="ai-rec-box" style="background:transparent;border:none;padding:0;box-shadow:none;">
+    <div class="ai-rec-header">
+      <div class="ai-dot"></div>
+      <span class="ai-rec-section-title">AI Analysis — ${cap(label)}</span>
+      <div class="ai-badge-pill" style="margin:0 0 0 auto">✓ Tailored for: ${tailored}</div>
+    </div>
+    <div class="tags-row" style="margin-bottom:.85rem">${tagsHtml}</div>
+    <div class="ai-cards-grid">
+
+      ${score !== null ? `
+      <div class="ai-rec-card">
+        <div class="ai-card-header"><div class="ai-card-icon amber">🏅</div><span class="ai-card-label amber">Overall Score</span></div>
+        <div class="ai-card-body">
+          <span class="ai-score-num" style="color:${scoreColor}">${score}</span>
+          <span class="ai-score-denom"> / ${scoreMax}</span>
+          ${r.score_reason ? `<div style="font-size:.82rem;color:var(--muted);margin-top:.35rem;line-height:1.55">${r.score_reason}</div>` : ''}
+          <div class="ai-score-bar"><div class="ai-score-fill" style="width:${scorePct}%;background:${scoreBarColor}"></div></div>
+        </div>
+      </div>` : ''}
+
+      ${r.summary ? `
+      <div class="ai-rec-card">
+        <div class="ai-card-header"><div class="ai-card-icon sky">🔬</div><span class="ai-card-label sky">Food Summary</span></div>
+        <div class="ai-card-body">${r.summary}</div>
+      </div>` : ''}
+
+      ${r.limit?.length ? `
+      <div class="ai-rec-card">
+        <div class="ai-card-header"><div class="ai-card-icon red">⚠️</div><span class="ai-card-label red">Limit / Avoid</span></div>
+        <div class="ai-card-body">${mkList(r.limit)}</div>
+      </div>` : ''}
+
+      ${r.balance_with?.length ? `
+      <div class="ai-rec-card">
+        <div class="ai-card-header"><div class="ai-card-icon green">🥗</div><span class="ai-card-label green">Balance With</span></div>
+        <div class="ai-card-body">${mkList(r.balance_with)}</div>
+      </div>` : ''}
+
+      ${r.modifications?.length ? `
+      <div class="ai-rec-card">
+        <div class="ai-card-header"><div class="ai-card-icon amber">🍳</div><span class="ai-card-label amber">Modify Recipe</span></div>
+        <div class="ai-card-body">${mkList(r.modifications)}</div>
+      </div>` : ''}
+
+      ${r.hydration ? `
+      <div class="ai-rec-card">
+        <div class="ai-card-header"><div class="ai-card-icon sky">💧</div><span class="ai-card-label sky">Hydration</span></div>
+        <div class="ai-card-body">${r.hydration}</div>
+      </div>` : ''}
+
+      ${r.health_tips?.length ? `
+      <div class="ai-rec-card">
+        <div class="ai-card-header"><div class="ai-card-icon forest">💡</div><span class="ai-card-label forest">Health Tips</span></div>
+        <div class="ai-card-body">${mkList(r.health_tips)}</div>
+      </div>` : ''}
+
+    </div>
+  </div>`;
+}
+
+function renderNutritionGrid(n,label,portion){
+  return`<div id="nut-grid">
+    <div class="section-label" style="margin-bottom:.5rem">Nutritional Breakdown — ${cap(label)} (${portion}g)</div>
+    <div class="nutrition-grid-4">
+      <div class="nut-cell"><div class="nut-val">${n.calories}<span class="nut-unit"> kcal</span></div><div class="nut-label">Calories</div><div class="nut-bar"><div class="nut-bar-fill" style="width:${Math.min(n.calories/5,100)}%;background:var(--amber)"></div></div></div>
+      <div class="nut-cell"><div class="nut-val">${n.protein}<span class="nut-unit"> g</span></div><div class="nut-label">Protein</div><div class="nut-bar"><div class="nut-bar-fill" style="width:${Math.min(n.protein*2,100)}%;background:var(--sky)"></div></div></div>
+      <div class="nut-cell"><div class="nut-val">${n.carbs}<span class="nut-unit"> g</span></div><div class="nut-label">Carbs</div><div class="nut-bar"><div class="nut-bar-fill" style="width:${Math.min(n.carbs,100)}%;background:var(--gold)"></div></div></div>
+      <div class="nut-cell"><div class="nut-val">${n.fat}<span class="nut-unit"> g</span></div><div class="nut-label">Fat</div><div class="nut-bar"><div class="nut-bar-fill" style="width:${Math.min(n.fat*2,100)}%;background:var(--coral)"></div></div></div>
+    </div></div>`;
+}
+
+function selectFood(idx){S.selectedFoodIdx=idx;renderFoodContent();}
+let portionTimer=null;
+function onPortionChange(idx,val){
+  val=parseInt(val);S.currentPortions[idx]=val;$('portion-display').textContent=val+'g';
+  clearTimeout(portionTimer);portionTimer=setTimeout(()=>rescaleAndUpdate(idx,val),300);
+}
+async function rescaleAndUpdate(idx,portion){
+  const active=S.analysisResult.per_food_data[idx],n=active.base_nutrition;
+  try{
+    const params=new URLSearchParams({base_calories:n.calories,base_protein:n.protein,base_carbs:n.carbs,base_fat:n.fat,base_portion:100,current_portion:portion,disease:S.disease,food_name:active.label});
+    const scaled=await api('GET','/api/scale?'+params);
+    active.nutrition=scaled;active.tags=scaled.tags;active.status=scaled.status;
+    const grid=$('nut-grid');if(grid)grid.outerHTML=renderNutritionGrid(scaled,active.label,portion);
+  }catch(e){}
+}
+
+async function doConsumed(){
+  const pfd=S.analysisResult.per_food_data;
+  let tc=0,tp=0,th=0,tf=0,totalP=0,allNames=[];
+  pfd.forEach((f,i)=>{
+    const p=S.currentPortions[i]||S.detectedPortions[i],scale=p/100,n=f.base_nutrition;
+    tc+=Math.round(n.calories*scale);tp+=Math.round(n.protein*scale);th+=Math.round(n.carbs*scale);tf+=Math.round(n.fat*scale);totalP+=p;allNames.push(cap(f.label));
+  });
+  try{
+    await api('POST','/api/meals/log',{username:S.username,food_name:allNames.join(' + '),caption:'Combined: '+allNames.join(', '),calories:tc,protein:tp,carbs:th,fat:tf,portion:totalP});
+    S.analysisSaved=true;renderFoodContent();toast('Meal logged successfully!','success');
+  }catch(e){toast(e.message,'error');}
+}
+function doNotConsumed(){
+  S.analysisResult=null;S.analysisSaved=false;
+  $('results-content').style.display='none';$('empty-state').style.display='block';
+  toast('Meal discarded.','info');
+}
+
+/* ════════ ANALYTICS ════════ */
+let chartBar=null,chartDonut=null,chartLine=null;
+async function loadAnalytics(){
+  try{
+    const data=await api('GET',`/api/meals/analytics/${S.username}?disease=${S.disease}`);
+    if(data.empty){$('analytics-content').innerHTML='<div style="text-align:center;padding:4rem;color:var(--muted)">📊 No meals logged yet. Start by analyzing some food!</div>';return;}
+    renderAnalytics(data);
+  }catch(e){$('analytics-content').innerHTML=`<div style="padding:2rem;color:var(--red)">${e.message}</div>`;}
+}
+function filterAnalytics(days,el){document.querySelectorAll('.time-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active');loadAnalytics();}
+
+function renderAnalytics(d){
+  const s=d.stats;
+  $('analytics-content').innerHTML=`
+  <div class="stats-row">
+    <div class="stat-card sc-green"><div class="stat-lbl">Avg Daily Calories</div><div class="stat-num">${s.avg_calories}<span class="stat-unit"> kcal</span></div></div>
+    <div class="stat-card sc-gold"><div class="stat-lbl">Avg Protein</div><div class="stat-num">${s.avg_protein}<span class="stat-unit"> g</span></div></div>
+    <div class="stat-card sc-blue"><div class="stat-lbl">Meals Logged</div><div class="stat-num">${s.total_meals}</div></div>
+    <div class="stat-card sc-red"><div class="stat-lbl">Avg Fat</div><div class="stat-num">${s.avg_fat}<span class="stat-unit"> g</span></div></div>
+  </div>
+  <div class="charts-grid">
+    <div class="chart-card"><div class="chart-title">Calorie intake — last 7 days</div><div class="chart-wrap"><canvas id="chart-bar"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">Macro distribution</div><div class="chart-wrap"><canvas id="chart-donut"></canvas></div></div>
+  </div>
+  <div class="chart-card full-chart"><div class="chart-title">📈 Daily Calories Trend</div><div class="chart-wrap"><canvas id="chart-line"></canvas></div></div>
+  <div class="score-section">
+    <div class="chart-card">
+      <div class="chart-title">🧠 Health Score</div>
+      <div class="gauge-wrap"><canvas id="chart-gauge" width="160" height="160" style="max-width:160px"></canvas></div>
+      <div style="text-align:center;margin-top:.5rem"><span style="font-family:'Playfair Display',serif;font-size:2rem;font-weight:700;color:var(--forest)">${s.health_score}</span><span style="font-size:.85rem;color:var(--muted)"> / 100</span></div>
+    </div>
+    <div class="chart-card"><div class="chart-title">🍽️ Most Eaten Foods</div><div class="top-foods-list" id="top-foods-list"></div></div>
+  </div>
+  <div class="meals-table-card">
+    <div class="meals-table-header"><span style="font-size:1rem;font-weight:600;color:var(--forest)">Recent meals</span><span style="font-size:.85rem;color:var(--muted)">${d.recent_meals.length} entries</span></div>
+    <div class="table-wrap"><table><thead><tr><th></th><th>Food</th><th>Calories</th><th>Protein</th><th>Carbs</th><th>Fat</th><th>Status</th></tr></thead><tbody id="meals-tbody"></tbody></table></div>
+  </div>
+  <div class="insight-panel">
+    <div class="insight-panel-header"><div class="insight-icon">🤖</div><div class="insight-panel-title">AI Weekly Insight</div></div>
+    <div class="insight-panel-text" id="weekly-insight-text">Click below to generate your personalized AI insight.</div>
+    <button class="btn btn-ghost ai-insight-btn" style="color:#fff;border-color:rgba(255,255,255,.22)" onclick="loadWeeklyInsight()">Generate Insight →</button>
+  </div>`;
+
+  const gc='rgba(74,122,74,0.1)',tc2='#7a8a7a';
+  const cd={responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:tc2,font:{family:'DM Sans'}}}},scales:{x:{ticks:{color:tc2},grid:{color:gc}},y:{ticks:{color:tc2},grid:{color:gc}}}};
+  if(chartBar)chartBar.destroy();
+  chartBar=new Chart($('chart-bar'),{type:'bar',data:{labels:d.calorie_trend.map(r=>r.day),datasets:[{label:'Calories',data:d.calorie_trend.map(r=>r.calories),backgroundColor:'rgba(107,168,107,0.65)',borderRadius:6,borderSkipped:false}]},options:{...cd}});
+  if(chartDonut)chartDonut.destroy();
+  chartDonut=new Chart($('chart-donut'),{type:'doughnut',data:{labels:['Carbs','Protein','Fat'],datasets:[{data:[d.macros.carbs,d.macros.protein,d.macros.fat],backgroundColor:['#d4a017','#3d80c0','#d4604a'],borderWidth:0,hoverOffset:6}]},options:{responsive:true,maintainAspectRatio:false,cutout:'70%',plugins:{legend:{position:'bottom',labels:{color:tc2,font:{family:'DM Sans'}}}}}});
+  if(chartLine)chartLine.destroy();
+  chartLine=new Chart($('chart-line'),{type:'line',data:{labels:d.daily_trend.map(r=>r.date),datasets:[{label:'Calories',data:d.daily_trend.map(r=>r.calories),borderColor:'#4a7a4a',backgroundColor:'rgba(74,122,74,0.09)',fill:true,tension:.35,pointBackgroundColor:'#e8a93a',pointRadius:4}]},options:{...cd}});
+  const gCtx=$('chart-gauge').getContext('2d'),score=s.health_score,cx=80,cy=80,r=62;
+  gCtx.clearRect(0,0,160,160);
+  gCtx.beginPath();gCtx.arc(cx,cy,r,Math.PI*.75,Math.PI*2.25);gCtx.strokeStyle='rgba(74,122,74,0.1)';gCtx.lineWidth=13;gCtx.lineCap='round';gCtx.stroke();
+  const end=Math.PI*.75+(score/100)*(Math.PI*1.5);
+  gCtx.beginPath();gCtx.arc(cx,cy,r,Math.PI*.75,end);gCtx.strokeStyle=score<40?'#b83232':score<70?'#d4a017':'#4a7a4a';gCtx.lineWidth=13;gCtx.lineCap='round';gCtx.stroke();
+  const maxC=Math.max(...d.top_foods.map(f=>f.count),1);
+  $('top-foods-list').innerHTML=d.top_foods.map(f=>`<div class="top-food-row"><span class="tf-emoji">${getEmoji(f.food)}</span><span class="tf-name">${cap(f.food)}</span><div class="tf-bar-wrap"><div class="tf-bar" style="width:${Math.round(f.count/maxC*100)}%"></div></div><span class="tf-count">${f.count}x</span></div>`).join('');
+  $('meals-tbody').innerHTML=d.recent_meals.map(m=>`<tr><td>${m.emoji}</td><td>${cap(m.food_name)}</td><td class="cal-num" style="font-family:'DM Mono',monospace">${m.calories}</td><td class="prot-num" style="font-family:'DM Mono',monospace">${m.protein}g</td><td class="carbs-num" style="font-family:'DM Mono',monospace">${m.carbs}g</td><td class="fat-num" style="font-family:'DM Mono',monospace">${m.fat}g</td><td><span class="status-pill status-${m.status}">${m.status}</span></td></tr>`).join('');
+}
+
+async function loadWeeklyInsight(){
+  try{spin(true,'analyze');const d=await api('POST','/api/meals/weekly-insight',{username:S.username});$('weekly-insight-text').textContent=d.insight;}
+  catch(e){toast(e.message,'error');}finally{spin(false);}
+}
+
+/* ════════ HISTORY ════════ */
+async function loadHistory(){
+  try{
+    const data=await api('GET',`/api/meals/history/${S.username}`);
+    if(!data.length){$('history-content').innerHTML='<div style="text-align:center;padding:4rem;color:var(--muted)">No meals logged yet.</div>';return;}
+    $('history-content').innerHTML=`<div class="history-grid">${[...data].reverse().map(m=>`
+      <div class="history-row">
+        <div class="hr-emoji">${m.emoji}</div>
+        <div class="hr-info"><div class="hr-name">${cap(m.food_name)}</div><div class="hr-time">${formatTime(m.timestamp)}</div></div>
+        <div class="hr-macros">
+          <div class="hr-macro"><div class="hr-macro-val cal-num">${m.calories}</div><div class="hr-macro-lbl">kcal</div></div>
+          <div class="hr-macro"><div class="hr-macro-val prot-num">${m.protein}g</div><div class="hr-macro-lbl">protein</div></div>
+          <div class="hr-macro"><div class="hr-macro-val carbs-num">${m.carbs}g</div><div class="hr-macro-lbl">carbs</div></div>
+          <div class="hr-macro"><div class="hr-macro-val fat-num">${m.fat}g</div><div class="hr-macro-lbl">fat</div></div>
+        </div>
+      </div>`).join('')}</div>`;
+  }catch(e){$('history-content').innerHTML=`<div style="color:var(--red);padding:2rem">${e.message}</div>`;}
+}
+
+/* ════════ PROFILE ════════ */
+async function loadProfileStats(){
+  const displayN=S.displayName||S.username;
+  $('profile-name').textContent=displayN;
+  $('nav-avatar').textContent=displayN.slice(0,2).toUpperCase();
+  $('profile-avatar').textContent=displayN.slice(0,2).toUpperCase();
+  // Sync disease items
+  document.querySelectorAll('.disease-item').forEach(d=>d.classList.toggle('active',d.dataset.d===S.disease));
+  renderBodyDisplay();
+  try{
+    const data=await api('GET',`/api/meals/analytics/${S.username}?disease=${S.disease}`);
+    if(data.empty){$('profile-stats').textContent='No meals logged yet.';return;}
+    const s=data.stats;
+    $('profile-stats').innerHTML=`<div style="display:flex;flex-direction:column;gap:.9rem">
+      <div><div style="font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;font-weight:600">Total meals</div><div style="font-family:'Playfair Display',serif;font-size:1.6rem;font-weight:700;color:var(--forest);margin-top:.1rem">${s.total_meals}</div></div>
+      <div><div style="font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;font-weight:600">Avg calories / meal</div><div style="font-family:'Playfair Display',serif;font-size:1.6rem;font-weight:700;color:var(--amber);margin-top:.1rem">${s.avg_calories} kcal</div></div>
+      <div><div style="font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;font-weight:600">Health score</div><div style="font-family:'Playfair Display',serif;font-size:1.6rem;font-weight:700;color:${s.health_score>=70?'var(--green)':s.health_score>=40?'var(--amber)':'var(--red)'};margin-top:.1rem">${s.health_score} / 100</div></div>
+    </div>`;
+  }catch(e){$('profile-stats').textContent='Could not load stats.';}
+}
+
+/* ════════ BODY DETAILS ════════ */
+function saveBodyLocal(u,b){try{localStorage.setItem('nutrilens_body_'+u,JSON.stringify(b));}catch(e){}}
+function loadBodyLocal(u){try{const d=localStorage.getItem('nutrilens_body_'+u);return d?JSON.parse(d):null;}catch(e){return null;}}
+
+let _selectedGender={reg:'Male',edit:'Male',ob:'Male'};
+function selectGender(el,ctx){
+  const gridId=ctx+'-gender-grid';
+  const grid=$(gridId);
+  if(grid){grid.querySelectorAll('.gender-btn,.glass-gender-btn').forEach(b=>b.classList.remove('active'));}
+  el.classList.add('active');
+  _selectedGender[ctx]=el.dataset.g;
+}
+
+function toggleBodyEdit(forceOpen){
+  const form=$('body-edit-form');
+  const open=forceOpen!==undefined?forceOpen:!form.classList.contains('open');
+  form.classList.toggle('open',open);
+  if(open){
+    $('edit-age').value=S.body.age||'';
+    $('edit-height').value=S.body.height||'';
+    $('edit-weight').value=S.body.weight||'';
+    _selectedGender.edit=S.body.gender||'Male';
+    $('edit-gender-grid').querySelectorAll('.gender-btn').forEach(b=>{b.classList.toggle('active',b.dataset.g===_selectedGender.edit);});
+  }
+}
+
+async function saveBodyDetails(){
+  const age=$('edit-age').value.trim(),height=$('edit-height').value.trim(),weight=$('edit-weight').value.trim();
+  const gender=_selectedGender.edit||'Male';
+  S.body={age,height,weight,gender};
+  saveBodyLocal(S.username,S.body);
+  toggleBodyEdit(false);
+  renderBodyDisplay();
+  try{
+    await api('POST','/api/profile/save',{username:S.username,name:S.displayName,age,height,weight,gender,disease:S.disease});
+  }catch(e){}
+  toast('Body details saved!','success');
+}
+
+function calcBMI(h,w){const hh=parseFloat(h),ww=parseFloat(w);if(!hh||!ww||hh<50)return null;return(ww/((hh/100)**2)).toFixed(1);}
+function bmiCategory(bmi){if(bmi<18.5)return{cls:'underweight',label:'Underweight'};if(bmi<25)return{cls:'normal',label:'Healthy BMI'};if(bmi<30)return{cls:'overweight',label:'Overweight'};return{cls:'obese',label:'Obese'};}
+
+function renderBodyDisplay(){
+  const b=S.body;
+  $('disp-age').textContent=b.age||'—';$('disp-height').textContent=b.height||'—';$('disp-weight').textContent=b.weight||'—';$('disp-gender').textContent=b.gender?b.gender.split(' ')[0]:'—';
+  const parts=[];if(b.gender&&b.gender!=='Prefer not')parts.push(b.gender);if(b.age)parts.push(b.age+' yrs');
+  $('profile-meta').textContent=parts.length?parts.join(' · '):'NutriLens Member';
+  const bmi=calcBMI(b.height,b.weight);
+  const chipWrap=$('bmi-chip-wrap');const chipDisp=$('profile-bmi-display');
+  if(bmi){const cat=bmiCategory(parseFloat(bmi));const chipHtml=`<span class="bmi-chip ${cat.cls}">⚡ BMI ${bmi} · ${cat.label}</span>`;if(chipWrap)chipWrap.innerHTML=chipHtml;if(chipDisp)chipDisp.innerHTML=`<span class="bmi-chip ${cat.cls}" style="white-space:nowrap">BMI ${bmi}</span>`;}
+  else{if(chipWrap)chipWrap.innerHTML='<span style="font-size:.8rem;color:var(--muted)">Add height &amp; weight to see your BMI</span>';if(chipDisp)chipDisp.innerHTML='';}
+}
+
+/* ════════ HELPERS ════════ */
+function cap(s){return s?s.charAt(0).toUpperCase()+s.slice(1):'';}
+function formatTime(ts){try{return new Date(ts).toLocaleString();}catch{return ts;}}
+const EMOJI_MAP={biryani:'🍚',rice:'🍚','fried rice':'🍚',curry:'🍛',dal:'🥣',roti:'🫓',naan:'🫓',paratha:'🫓',dosa:'🥞',idli:'⚪',samosa:'🥟',paneer:'🧀','butter chicken':'🍗',chicken:'🍗',mutton:'🥩',fish:'🐟',egg:'🥚',pizza:'🍕',pasta:'🍝',burger:'🍔','hot dog':'🌭',hotdog:'🌭',sandwich:'🥪',salad:'🥗',soup:'🍲',noodles:'🍜',ramen:'🍜',cake:'🍰','ice cream':'🍦',fruit:'🍎',fries:'🍟','chole bhature':'🥘',chole:'🥘',bhature:'🥘',puri:'🥘',halwa:'🍮','gulab jamun':'🍮',rasgulla:'🍮',jalebi:'🍩',lassi:'🥛',chai:'☕'};
+function getEmoji(name){if(!name)return'🍽️';const low=name.toLowerCase();for(const[k,v]of Object.entries(EMOJI_MAP))if(low.includes(k))return v;return'🍽️';}
+
+// Show login page on load
+$('page-login').style.display='flex';
+</script>
+</body>
+</html>
