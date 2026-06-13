@@ -1,7 +1,4 @@
 __pycache__/
 .env
-*.pt
-*.pkl
-*.faiss
 *.db
 *.zip
