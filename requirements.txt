@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+python-multipart
+pillow
+pymongo
+faiss-cpu
+ultralytics
+torch
+transformers
+google-generativeai
