@@ -1,5 +1,5 @@
 __pycache__/
 .env
+checkpoint_best.pt
 *.db
 *.zip
-*.pt
