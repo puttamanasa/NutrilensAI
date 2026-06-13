@@ -1,6 +1,5 @@
 from sqlalchemy import create_engine, Column, Integer, String, Date, Float
 from sqlalchemy.orm import declarative_base, sessionmaker
-
 engine = create_engine("sqlite:///diet.db")
 
 Base = declarative_base()

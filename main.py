@@ -15,7 +15,7 @@ import io
 from PIL import Image
 
 # ── Your existing modules (unchanged) ──────────────────────────────────────
-from blip_model import process_image
+from yolo_clip import process_image
 from rag_retriever import retrieve_food_docs
 from gemini_recommender import rag_diet_reasoning, weekly_diet_recommendation
 from portion_estimator import estimate_portion
